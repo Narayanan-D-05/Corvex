@@ -1,0 +1,11 @@
+{
+  "note": "June 26 style split weekend: 2-for-1, so the official open is a per-share $106.10 while the token price stays near $212.",
+  "symbols": {
+    "TSLA": { "0": { "close": "200.00" }, "1": { "open": "106.10" } }
+  },
+  "calendar": {
+    "nextCloseOffsetSeconds": 3600,
+    "nextOpenOffsetSeconds": 172800,
+    "pendingMultiplier": "2"
+  }
+}

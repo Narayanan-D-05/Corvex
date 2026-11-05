@@ -1,0 +1,11 @@
+{
+  "note": "Mock official prices per share. Session 0 close, session 1 open. Replace with a real provider for the submission.",
+  "symbols": {
+    "TSLA": { "0": { "close": "200.00" }, "1": { "open": "212.30" } }
+  },
+  "calendar": {
+    "nextCloseOffsetSeconds": 3600,
+    "nextOpenOffsetSeconds": 172800,
+    "pendingMultiplier": null
+  }
+}
