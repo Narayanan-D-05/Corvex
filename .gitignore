@@ -16,3 +16,6 @@ out/
 cache/
 broadcast/
 contracts/lib/
+
+# generated local deployment
+contracts/deployments/local.json
