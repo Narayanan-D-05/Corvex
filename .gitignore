@@ -19,3 +19,4 @@ contracts/lib/
 
 # generated local deployment
 contracts/deployments/local.json
+contracts/deployments/*.json
