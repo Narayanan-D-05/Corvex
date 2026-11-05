@@ -1,0 +1,9 @@
+forge-std/=lib/forge-std/src/
+@uniswap/v4-core/=lib/openzeppelin-uniswap-hooks/lib/v4-core/
+@uniswap/v4-periphery/=lib/openzeppelin-uniswap-hooks/lib/v4-periphery/
+@openzeppelin/contracts/=lib/openzeppelin-uniswap-hooks/lib/openzeppelin-contracts/contracts/
+@openzeppelin/uniswap-hooks/=lib/openzeppelin-uniswap-hooks/
+@chainlink/contracts-ccip/contracts/=lib/chainlink/contracts/src/v0.8/ccip/
+@chainlink/contracts/=lib/chainlink/contracts/
+solmate/=lib/openzeppelin-uniswap-hooks/lib/v4-core/lib/solmate/
+permit2/=lib/openzeppelin-uniswap-hooks/lib/v4-periphery/lib/permit2/
