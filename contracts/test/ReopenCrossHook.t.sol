@@ -47,7 +47,7 @@ contract ReopenCrossHookTest is CorvexBase {
         uint256 priceBefore = _price();
         uint256 usdgBefore = _balance(address(usdg), alice);
         uint256 stockBefore = _balance(address(stock), alice);
-        _swapIn(alice, true, _q(10_000), _q(215));
+        _swapIn(alice, true, _q(10_000), 215e18);
 
         assertEq(usdgBefore - _balance(address(usdg), alice), _q(10_000), "input taken");
         assertEq(_balance(address(stock), alice), stockBefore, "no fill yet");
@@ -57,7 +57,7 @@ contract ReopenCrossHookTest is CorvexBase {
         assertEq(o[0].owner, alice);
         assertTrue(o[0].buy);
         assertEq(o[0].amountIn, _q(10_000));
-        assertEq(o[0].limitPrice, _q(215));
+        assertEq(o[0].limitPrice, 215e18);
         assertEq(hook.liabilities(address(usdg)), _q(10_000));
         assertEq(manager.balanceOf(address(hook), Currency.wrap(address(usdg)).toId()), _q(10_000));
     }
