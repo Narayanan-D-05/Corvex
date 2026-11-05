@@ -34,7 +34,8 @@ contract SessionPrintOracle is CCIPReceiver, ReceiverTemplate {
         uint64 sessionId,
         uint8 kind,
         uint256 tokenPrice,
-        uint256 multiplier
+        uint256 multiplier,
+        uint64 timestamp
     );
     event PrintJudged(bytes32 indexed key, bool attested, int32 deviationBps);
 
@@ -73,7 +74,7 @@ contract SessionPrintOracle is CCIPReceiver, ReceiverTemplate {
         if (_entries[key].status != Status.None) revert Duplicate(key);
         _entries[key].print = p;
         _entries[key].status = Status.Recorded;
-        emit PrintReceived(key, p.token, p.sessionId, p.kind, p.tokenPrice, p.multiplier);
+        emit PrintReceived(key, p.token, p.sessionId, p.kind, p.tokenPrice, p.multiplier, p.timestamp);
     }
 
     // CRE: a verdict on a recorded print. Report = (bytes32 key, bool attested, int32 deviationBps, uint64 chainSelector)

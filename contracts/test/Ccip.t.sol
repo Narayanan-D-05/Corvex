@@ -293,6 +293,11 @@ contract CcipTest is CorvexBase {
         assertEq(s.reopenAt, T0 + 3 days);
         assertEq(s.expectedMultiplier, 2e18);
         assertEq(router.failureCount(), 0);
+        assertEq(
+            controller.scheduleHash(PoolId.unwrap(pid)),
+            keccak256(abi.encode(uint40(T0 + 1 hours), uint40(T0 + 3 days), uint256(2e18))),
+            "workflow can tell the schedule was delivered"
+        );
 
         vm.warp(T0 + 2 hours);
         feed.setAnswer(200e8);

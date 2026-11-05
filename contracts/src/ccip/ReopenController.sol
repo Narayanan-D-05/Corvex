@@ -15,6 +15,9 @@ contract ReopenController is ReceiverTemplate {
     address public reopenReceiver;
     uint32 public gasLimit = 300_000;
     mapping(bytes32 poolId => uint64) public lastNonce;
+    /// @notice keccak256(abi.encode(darkFrom, reopenAt, expectedMultiplier)) of the last schedule sent, so the
+    /// workflow can skip a schedule that was already delivered.
+    mapping(bytes32 poolId => bytes32) public scheduleHash;
 
     event ScheduleSent(bytes32 indexed poolId, bytes32 indexed messageId, uint40 darkFrom, uint40 reopenAt, uint256 expectedMultiplier, uint64 nonce);
     event ReceiverSet(address receiver);
@@ -49,6 +52,7 @@ contract ReopenController is ReceiverTemplate {
         if (nonce <= lastNonce[poolId]) revert StaleNonce(nonce, lastNonce[poolId]);
         if (reopenReceiver == address(0)) revert ReceiverNotSet();
         lastNonce[poolId] = nonce;
+        scheduleHash[poolId] = keccak256(abi.encode(darkFrom, reopenAt, mult));
 
         Client.EVM2AnyMessage memory m = _message(abi.encode(uint8(0), poolId, darkFrom, reopenAt, mult, nonce));
         uint256 fee = router.getFee(destSelector, m);
