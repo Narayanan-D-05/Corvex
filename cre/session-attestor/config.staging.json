@@ -1,0 +1,15 @@
+{
+  "schedule": "0 */5 * * * *",
+  "chainName": "ethereum-testnet-sepolia-arbitrum-1",
+  "oracleAddress": "0x0000000000000000000000000000000000000000",
+  "controllerAddress": "0x0000000000000000000000000000000000000000",
+  "selfSelector": "3478487238524512106",
+  "maxDeviationBps": 150,
+  "provider": "mock",
+  "officialPriceApi": "http://localhost:8787/official",
+  "symbols": {
+    "0x0000000000000000000000000000000000000000": "TSLA"
+  },
+  "calendarApi": "http://localhost:8787/calendar",
+  "gasLimit": "500000"
+}

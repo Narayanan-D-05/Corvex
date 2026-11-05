@@ -1,0 +1,4 @@
+staging-settings:
+  rpcs:
+    - chain-name: ethereum-testnet-sepolia-arbitrum-1
+      url: https://sepolia-rollup.arbitrum.io/rpc
