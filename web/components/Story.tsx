@@ -85,7 +85,7 @@ export function Story() {
         <div className="relative min-h-[11rem]">
           <h2 className="font-display text-5xl leading-[1.02] md:text-6xl">How a cross works</h2>
           <div className="relative mt-8 min-h-[9rem]">
-            {steps.map((s, i) => (
+            {steps.map((s) => (
               <div key={s.title} className={`cap ${animated ? "absolute inset-x-0 top-0" : "mb-6"}`}>
                 <h3 className="text-xl font-semibold">{s.title}</h3>
                 <p className="mt-2 max-w-[38ch] text-slate">{s.body}</p>
