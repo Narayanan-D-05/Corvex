@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #e8edf3;
+  --paper-2: #dde4ed;
+  --ink: #10203a;
+  --night: #0b1730;
+  --slate: #5c6b82;
+  --line: #c3cdda;
+  --cobalt: #2650ff;
+  --mint: #12a072;
+  --amber: #b97c00;
+  --rose: #c2412d;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-ink: var(--ink);
+  --color-night: var(--night);
+  --color-slate: var(--slate);
+  --color-line: var(--line);
+  --color-cobalt: var(--cobalt);
+  --color-mint: var(--mint);
+  --color-amber: var(--amber);
+  --color-rose: var(--rose);
+  --font-display: var(--font-instrument), Georgia, serif;
+  --font-sans: var(--font-bricolage), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cobalt);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
