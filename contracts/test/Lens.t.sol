@@ -22,6 +22,7 @@ contract LensTest is CorvexBase {
         assertTrue(s.plausible);
         assertApproxEqRel(s.poolPrice, 200e18, 1e12);
         assertEq(s.refPrice, 200e18);
+        assertGt(s.liquidity, 0);
     }
 
     function test_snapshotShowsEachReopenLight() public {

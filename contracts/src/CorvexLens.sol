@@ -22,6 +22,7 @@ contract CorvexLens {
         ReopenCrossHook.Mode mode;
         uint64 sessionId;
         uint256 poolPrice; // quote per token, 18 dp
+        uint128 liquidity;
         uint256 refPrice; // latest feed price, 0 if the feed is invalid
         uint256 darkRefPrice;
         uint256 crossPrice;
@@ -64,6 +65,7 @@ contract CorvexLens {
 
         (uint160 sqrtP,,,) = poolManager.getSlot0(id);
         r.poolPrice = PriceMath.priceFromSqrt(pc.scale, sqrtP);
+        r.liquidity = poolManager.getLiquidity(id);
 
         (, int256 answer,, uint256 updatedAt,) = AggregatorV3Interface(c.feed).latestRoundData();
         if (answer > 0) {
