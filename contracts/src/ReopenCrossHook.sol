@@ -187,7 +187,7 @@ contract ReopenCrossHook is Ownable {
     error NotCancellable();
     error NotOwnerOrExpired();
     error BadSchedule();
-    error CrossInsolvent();
+    error CrossInsolvent(uint256 deficit, uint256 claims);
     error NothingToWithdraw();
     error BadConfig();
 
@@ -766,7 +766,7 @@ contract ReopenCrossHook is Ownable {
             if (o.buy) cq = amt;
             else cs = amt;
         } else if (cls == 1) {
-            uint256 used = x.buyersScaled ? _ceilMul(amt, x.num, x.den) : amt;
+            uint256 used = x.buyersScaled ? amt * x.num / x.den : amt;
             if (used > amt) used = amt;
             cs = x.sc.toStock(used, x.p);
             cq = amt - used;
@@ -774,7 +774,7 @@ contract ReopenCrossHook is Ownable {
             x.filled += 1;
             o.status = used == amt ? Status.Filled : Status.Partial;
         } else {
-            uint256 used = x.sellersScaled ? _ceilMul(amt, x.num, x.den) : amt;
+            uint256 used = x.sellersScaled ? amt * x.num / x.den : amt;
             if (used > amt) used = amt;
             cq = x.sc.toQuote(used, x.p);
             cs = amt - used;
@@ -786,10 +786,6 @@ contract ReopenCrossHook is Ownable {
         x.creditQuote += cq;
         if (cs != 0) credits[o.owner][Currency.unwrap(x.stockC)] += cs;
         if (cq != 0) credits[o.owner][Currency.unwrap(x.quoteC)] += cq;
-    }
-
-    function _ceilMul(uint256 a, uint256 num, uint256 den) internal pure returns (uint256) {
-        return (a * num + den - 1) / den;
     }
 
     /// @dev Swaps `amountIn` of the input currency against the pool, stopping at p*. The hook's own swaps skip
@@ -849,7 +845,7 @@ contract ReopenCrossHook is Ownable {
         if (bal >= liab) return bal - liab;
         uint256 deficit = liab - bal;
         // Only rounding dust may be absorbed.
-        if (deficit > bal / 1e9 + 100 || credits[lastOwner][a] < deficit) revert CrossInsolvent();
+        if (deficit > bal / 1e9 + 100 || credits[lastOwner][a] < deficit) revert CrossInsolvent(deficit, bal);
         credits[lastOwner][a] -= deficit;
         liabilities[a] -= deficit;
         return 0;
