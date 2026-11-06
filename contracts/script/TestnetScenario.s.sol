@@ -19,7 +19,9 @@ import {MockAggregator} from "../src/mocks/MockAggregator.sol";
 
 /// @notice Plays one weekend on Robinhood Chain Testnet with the deployer key alone and as little gas as possible.
 /// STAGE=close: market closes, hook goes dark, two orders queue. STAGE=open: market reopens at OPEN_PRICE_USD
-/// (default 212), the cross runs and both prints are broadcast over CCIP. Re-runnable for the next weekend.
+/// (default 212), the cross runs and both prints are broadcast over CCIP. STAGE=settle walks a pool left in the gap
+/// auction up to the cross price with a plain buy (SETTLE_USDG, default 3000), so the next weekend starts clean.
+/// Re-runnable for the next weekend.
 contract TestnetScenario is Script {
     using PoolIdLibrary for PoolKey;
 
@@ -58,6 +60,15 @@ contract TestnetScenario is Script {
             _swap(router, key, !stockIs0, 5000e6, 215e18, me);
             _swap(router, key, stockIs0, 10e18, 190e18, me);
             _log(lens, hook, key, "orders queued");
+        } else if (keccak256(bytes(stage)) == keccak256("settle")) {
+            usdg.mint(me, 20_000e6);
+            usdg.approve(address(router), type(uint256).max);
+            feed.setAnswer(int256(vm.envOr("OPEN_PRICE_USD", uint256(212))) * 1e8); // a fresh reference
+            market.setOpen(true);
+            hook.poke(key);
+            _log(lens, hook, key, "reference refreshed");
+            _swap(router, key, !stockIs0, vm.envOr("SETTLE_USDG", uint256(3000)) * 1e6, 0, me);
+            _log(lens, hook, key, "settled");
         } else {
             market.setOpen(true);
             feed.setAnswer(int256(vm.envOr("OPEN_PRICE_USD", uint256(212))) * 1e8);
