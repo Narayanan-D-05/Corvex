@@ -3,7 +3,7 @@
 import { fmtPrice, fmtUnits } from "@/lib/chain";
 import type { State } from "@/lib/useCorvex";
 
-const STATUS = ["Not sent", "Recorded", "Attested", "Disputed"];
+const STATUS = ["In transit (CCIP takes several minutes)", "Recorded", "Attested", "Disputed"];
 const tone = ["text-slate", "text-amber", "text-mint", "text-rose"];
 
 function Status({ v, name }: { v: number; name: string }) {
