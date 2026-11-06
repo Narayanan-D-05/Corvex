@@ -176,6 +176,28 @@ forge script script/WireRobinhood.s.sol --rpc-url $ROBINHOOD_TESTNET_RPC_URL --b
 
 The scripts write addresses to `contracts/deployments/`. Each script documents the environment variables it reads.
 
+### Live on testnet
+
+Deployed and exercised on 6 Nov 2026. The pool uses mock TSLA and USDG tokens, a mock price feed and a keeper-written market status, because Robinhood's testnet has no v4 and no stock-token pools.
+
+| Chain | Contract | Address |
+|---|---|---|
+| Robinhood Chain Testnet (46630) | ReopenCrossHook | [0x7D5F1c10Ae674558d40E3573e5fb2B1AC65860C8](https://explorer.testnet.chain.robinhood.com/address/0x7D5F1c10Ae674558d40E3573e5fb2B1AC65860C8) |
+| | PoolManager (v4) | [0x62Ab4b063018CEdD2433E8197af83700E4fC22ce](https://explorer.testnet.chain.robinhood.com/address/0x62Ab4b063018CEdD2433E8197af83700E4fC22ce) |
+| | PrintBroadcaster | [0xc3aB1Fbc933adCb04C55cC6173bB68BBaCd0C763](https://explorer.testnet.chain.robinhood.com/address/0xc3aB1Fbc933adCb04C55cC6173bB68BBaCd0C763) |
+| | ReopenReceiver | [0x3524e53F307b66E121d1Aee6173259f605c714C2](https://explorer.testnet.chain.robinhood.com/address/0x3524e53F307b66E121d1Aee6173259f605c714C2) |
+| | TSLA / USDG (mocks) | [0x535Ce55d...9B98](https://explorer.testnet.chain.robinhood.com/address/0x535Ce55d2802224E906D76F904FB3217EC4E9B98) / [0xEDF01941...92D1](https://explorer.testnet.chain.robinhood.com/address/0xEDF0194112B3c4d6D6986c5cd4E6F9c2C55992D1) |
+| Arbitrum Sepolia | SessionPrintOracle | [0x62Ab4b063018CEdD2433E8197af83700E4fC22ce](https://sepolia.arbiscan.io/address/0x62Ab4b063018CEdD2433E8197af83700E4fC22ce) |
+| | ReopenController | [0x535Ce55d2802224E906D76F904FB3217EC4E9B98](https://sepolia.arbiscan.io/address/0x535Ce55d2802224E906D76F904FB3217EC4E9B98) |
+| | OrderGateway | [0xa016acba6F6368c095511bA8Bb111ae77F2Eb660](https://sepolia.arbiscan.io/address/0xa016acba6F6368c095511bA8Bb111ae77F2Eb660) |
+| | SessionLedger | [0xdDeef9662D2512449850ABea08d556F6508B3De8](https://sepolia.arbiscan.io/address/0xdDeef9662D2512449850ABea08d556F6508B3De8) |
+| Base Sepolia | SessionPrintOracle | [0x62Ab4b063018CEdD2433E8197af83700E4fC22ce](https://sepolia.basescan.org/address/0x62Ab4b063018CEdD2433E8197af83700E4fC22ce) |
+| | OrderGateway | [0xa016acba6F6368c095511bA8Bb111ae77F2Eb660](https://sepolia.basescan.org/address/0xa016acba6F6368c095511bA8Bb111ae77F2Eb660) |
+
+`script/TestnetScenario.s.sol` plays a weekend on this deployment with one key: `STAGE=close` goes dark and queues an order, `STAGE=open` reopens at 212 and runs the cross, which sends both prints over CCIP. A whole weekend costs under 0.001 ETH. Cross-chain orders that carry tokens are only exercised locally, since the mock USDG has no CCIP token pool.
+
+Two things differ from the PRD sketch. v4's `initialize` takes no hook data, so the owner calls `configure()` before `initialize`. Market status is written by a keeper; the production path is a Data Streams adapter.
+
 ## Repo map
 
 | Path | What |
