@@ -184,7 +184,7 @@ cd .. && cre workflow simulate session-attestor --target staging-settings --non-
 cre workflow simulate session-attestor --target staging-settings --non-interactive --broadcast   --trigger-index 0 --evm-tx-hash <tx> --evm-event-index 0
 ```
 
-Fill `oracleAddress`, `controllerAddress` and `symbols` (lowercase token address) in [config.staging.json](cre/session-attestor/config.staging.json) from your deployment first. `cre` needs `cre login`; `--broadcast` signs with `CRE_ETH_PRIVATE_KEY`. Deploying the workflow to the CRE network additionally needs deploy access (`cre account access`), a public price API, and the real forwarder addresses from `cre workflow supported-chains`.
+Fill `oracleAddress`, `controllerAddress` and `symbols` (lowercase token address) in [config.staging.json](cre/session-attestor/config.staging.json) from your deployment first. `cre` needs `cre login`; `--broadcast` signs with `CRE_ETH_PRIVATE_KEY`. Running the workflow with `cre workflow simulate` is the supported way to run it locally ([Chainlink's guide](https://docs.chain.link/cre/guides/operations/simulating-workflows)), and the `--broadcast` run above writes real attestations on Arbitrum Sepolia. A network deployment is optional and would additionally need deploy access, a public price API, and the real forwarder addresses from `cre workflow supported-chains`.
 
 CRE lists `robinhood-testnet` as a supported chain, so a production build could write schedules straight to the hook and drop the Arbitrum controller hop. This repo keeps the PRD's design.
 
