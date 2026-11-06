@@ -1,24 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MODES, fmtPrice } from "@/lib/chain";
 import type { State } from "@/lib/useCorvex";
 
-const modeTone = ["bg-mint/15 text-mint", "bg-slate/20 text-ink", "bg-amber/15 text-amber", "bg-cobalt/15 text-cobalt"];
+const modeTone = ["bg-lime/15 text-lime", "bg-white/10 text-snow", "bg-amber/15 text-amber", "bg-[#6fa8ff]/15 text-[#9cc2ff]"];
 
 function line(s: NonNullable<State["snap"]>): string {
   switch (s.mode) {
     case 0:
-      return "Market open: trades fill at the normal fee.";
+      return "Market open. Trades fill at the normal fee.";
     case 1:
-      if (!s.marketOpen) return "Market closed: big trades wait for the open.";
-      if (s.oraclePaused) return "Token oracle paused: big trades wait until it resumes.";
-      if (!s.feedFresh) return "Price feed is stale: big trades wait for a fresh price.";
-      return "Scheduled pause: big trades wait for the announced reopen.";
+      if (!s.marketOpen) return "Market closed. Big trades wait for the open.";
+      if (s.oraclePaused) return "Token oracle paused. Big trades wait.";
+      if (!s.feedFresh) return "Price feed is stale. Big trades wait.";
+      return "Scheduled pause. Big trades wait for the reopen.";
     case 2:
-      return "Reference is back. Trading is paused until the cross runs.";
+      return "Reference is back. Trading pauses until the cross runs.";
     default:
-      return "Cross done. The leftover gap closes through a falling fee.";
+      return "Cross done. A falling fee closes the leftover gap.";
   }
 }
 
@@ -31,14 +31,9 @@ function Countdown({ to }: { to: number }) {
   }, []);
   if (!to || now === null) return null;
   const left = to - now;
-  const when = new Date(to * 1000).toUTCString().slice(5, 22) + " UTC";
-  if (left <= 0) return <span className="num">Scheduled reopen passed ({when})</span>;
+  if (left <= 0) return <span>Scheduled reopen passed</span>;
   const h = Math.floor(left / 3600), m = Math.floor((left % 3600) / 60), s = left % 60;
-  return (
-    <span>
-      Cross scheduled <span className="num">{when}</span>, in <span className="num">{h}h {m}m {s}s</span>
-    </span>
-  );
+  return <span>Cross in <span className="num">{h}h {m}m {s}s</span></span>;
 }
 
 const lights = [
@@ -49,6 +44,7 @@ const lights = [
   { key: "plausible", label: "Plausible", tip: "The new price is within 20% of the price before the pause." },
 ] as const;
 
+/** The pool's state at a glance: a status tile and the four prices. Renders into the page's bento grid. */
 export function Overview({ c }: { c: State }) {
   const s = c.snap!;
   const ok: Record<(typeof lights)[number]["key"], boolean> = {
@@ -59,48 +55,61 @@ export function Overview({ c }: { c: State }) {
     plausible: s.plausible,
   };
   const gap = s.refPrice > 0n ? ((Number(s.poolPrice) - Number(s.refPrice)) / Number(s.refPrice)) * 100 : 0;
+  const passing = Object.values(ok).filter(Boolean).length;
 
   return (
-    <div className="space-y-8">
-      <section aria-live="polite" className="rounded-2xl border border-line bg-paper-2 p-6 md:p-8">
-        <div className="flex flex-wrap items-center gap-3">
-          <span data-testid="mode" className={`rounded-md px-3 py-1 text-sm font-semibold ${modeTone[s.mode]}`}>{MODES[s.mode]}</span>
-          <span className="text-sm text-slate">Session <span className="num">{s.sessionId.toString()}</span></span>
+    <>
+      <section aria-live="polite" className="tile lg:col-span-4">
+        <div className="flex items-center gap-3">
+          <span data-testid="mode" className={`tag rounded-md px-3 py-1.5 ${modeTone[s.mode]}`}>{MODES[s.mode]}</span>
+          <span className="tag text-snow/50">Session <span className="num">{s.sessionId.toString()}</span></span>
+          {s.mode === 1 && <span className="relative ml-auto flex h-2.5 w-2.5"><i className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/40" /><i className="relative inline-flex h-2.5 w-2.5 rounded-full bg-white/70" /></span>}
         </div>
-        <p className="mt-4 font-display text-3xl leading-tight md:text-4xl">{line(s)}</p>
-        {s.reopenAt > 0 && <p className="mt-3 text-slate"><Countdown to={s.reopenAt} /></p>}
-        {s.expired && <p className="mt-3 text-rose">The reopen timed out. Queued orders can be refunded by anyone.</p>}
+        <p className="mt-3 font-display text-2xl leading-tight">{line(s)}</p>
+        {s.reopenAt > 0 && <p className="mt-2 text-sm text-slate"><Countdown to={s.reopenAt} /></p>}
+        {s.expired && <p className="mt-2 text-sm text-rose">The reopen timed out. Anyone can refund the queue.</p>}
+        <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-4" aria-label={`Reopen checks, ${passing} of 5 passing`}>
+          {lights.map((l) => (
+            <span key={l.key} title={`${l.label}: ${l.tip}`} className={`tag flex items-center gap-1 rounded-md border px-1.5 py-1 text-[0.65rem] ${ok[l.key] ? "border-white/10 text-snow/70" : "border-rose/50 text-rose"}`}>
+              <i aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${ok[l.key] ? "bg-lime" : "bg-rose"}`} />
+              {l.label}
+              <span className="sr-only">{ok[l.key] ? "passing" : "failing"}</span>
+            </span>
+          ))}
+        </div>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-4">
-        <Figure label="Pool price" value={`$${fmtPrice(s.poolPrice)}`} />
-        <Figure label="Reference price" value={s.refPrice > 0n ? `$${fmtPrice(s.refPrice)}` : "none"} />
-        <Figure label="Gap" value={`${gap >= 0 ? "+" : ""}${gap.toFixed(2)}%`} />
-        <Figure label={s.mode === 3 ? "Cross price" : "Last cross price"} value={s.mode === 3 ? `$${fmtPrice(s.crossPrice)}` : c.crosses[0] ? `$${fmtPrice(c.crosses[0].price)}` : "none yet"} />
-        {s.multiplier !== 10n ** 18n && <Figure label="Multiplier" value={`${(Number(s.multiplier) / 1e18).toFixed(2)}x`} />}
-      </section>
-      <details className="rounded-xl border border-line px-5 py-3">
-        <summary className="cursor-pointer text-sm font-medium">Reopen checks <span className="font-normal text-slate">({Object.values(ok).filter(Boolean).length} of 5 passing)</span></summary>
-        <ul className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5">
-          {lights.map((l) => (
-            <li key={l.key} title={l.tip} className="flex items-center gap-3 rounded-xl border border-line px-4 py-3">
-              <span aria-hidden="true" className={`h-3 w-3 shrink-0 rounded-full ${ok[l.key] ? "bg-mint" : "bg-rose"}`} />
-              <span className="text-sm">{l.label}</span>
-              <span className="sr-only">{ok[l.key] ? "passing" : "failing"}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-3 text-sm text-slate">A cross runs only when all five pass.</p>
-      </details>
-    </div>
+      <div className="grid grid-cols-2 gap-4 lg:col-span-8 lg:grid-cols-4">
+        <Price label="Pool price" value={`$${fmtPrice(s.poolPrice)}`} hint="Where the pool trades now" />
+        <Price label="Reference price" value={s.refPrice > 0n ? `$${fmtPrice(s.refPrice)}` : "none"} hint="The price feed" />
+        <Price label="Gap" value={`${gap >= 0 ? "+" : ""}${gap.toFixed(2)}%`} hint="Pool against reference" tone={Math.abs(gap) > 2 ? "text-amber" : undefined} />
+        <Price
+          label={s.mode === 3 ? "Cross price" : "Last cross price"}
+          value={s.mode === 3 ? `$${fmtPrice(s.crossPrice)}` : c.crosses[0] ? `$${fmtPrice(c.crosses[0].price)}` : "none yet"}
+          hint="One price for the queue"
+          tone="text-lime"
+        />
+      </div>
+    </>
   );
 }
 
-function Figure({ label, value }: { label: string; value: string }) {
+/** A price tile that flashes when its value changes. */
+function Price({ label, value, hint, tone }: { label: string; value: string; hint: string; tone?: string }) {
+  const prev = useRef(value);
+  const [flash, setFlash] = useState(false);
+  useEffect(() => {
+    if (prev.current === value) return;
+    prev.current = value;
+    setFlash(true);
+    const t = setTimeout(() => setFlash(false), 900);
+    return () => clearTimeout(t);
+  }, [value]);
   return (
-    <div className="rounded-xl border border-line px-5 py-4">
-      <div className="text-sm text-slate">{label}</div>
-      <div className="num mt-1 text-2xl">{value}</div>
+    <div className={`tile justify-between transition-colors duration-700 ${flash ? "border-lime/60 bg-lime/10" : ""}`}>
+      <div className="tag text-snow/50">{label}</div>
+      <div className={`num mt-2 text-3xl ${tone ?? ""}`}>{value}</div>
+      <div className="mt-1 text-xs text-slate">{hint}</div>
     </div>
   );
 }

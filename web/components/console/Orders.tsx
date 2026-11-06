@@ -148,9 +148,9 @@ export function Orders({ c, w, onChange }: { c: State; w: Wallet; onChange: () =
   const unit = side === "buy" ? "USDG" : "TSLA";
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[22rem_1fr]">
-      <form onSubmit={(e) => (e.preventDefault(), submit())} className="space-y-5 rounded-2xl border border-line p-6">
-        <h2 className="text-lg font-semibold">Place order</h2>
+    <>
+      <form onSubmit={(e) => (e.preventDefault(), submit())} className="tile space-y-3.5 lg:col-span-3 lg:overflow-y-auto">
+        <h2 className="tag text-lime">[ Place order ]</h2>
         <div role="group" aria-label="Side" className="grid grid-cols-2 gap-2">
           {(["buy", "sell"] as const).map((x) => (
             <button type="button" key={x} onClick={() => (setSide(x), x === "sell" && setFrom("local"))} aria-pressed={side === x} className={`rounded-lg border px-3 py-2 text-sm font-medium ${side === x ? "border-ink bg-ink text-paper" : "border-line"}`}>
@@ -195,9 +195,9 @@ export function Orders({ c, w, onChange }: { c: State; w: Wallet; onChange: () =
         {msg && <p role="status" className={`text-sm ${msg.ok ? "text-mint" : "text-rose"}`}>{msg.text}</p>}
       </form>
 
-      <div className="space-y-8">
+      <div className="tile space-y-6 lg:col-span-5 lg:overflow-y-auto">
         <section>
-          <h2 className="text-lg font-semibold">Queue</h2>
+          <h2 className="tag text-lime">[ Queue ]</h2>
           {c.orders.length === 0 ? (
             <p className="mt-3 text-slate">No orders in this session. Large trades placed while the pool is dark appear here.</p>
           ) : (
@@ -233,7 +233,7 @@ export function Orders({ c, w, onChange }: { c: State; w: Wallet; onChange: () =
         <Claims c={c} w={w} act={act} />
         <CrossChainFills c={c} w={w} act={act} />
       </div>
-    </div>
+    </>
   );
 }
 

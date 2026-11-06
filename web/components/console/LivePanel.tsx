@@ -43,35 +43,30 @@ export function LivePanel({ c, w, onChange }: { c: State; w: Wallet; onChange: (
     if (!res.ok) throw new Error(j.error ?? "The keeper failed");
   };
 
+  const ghost = "tag lift rounded-md border border-white/20 px-4 py-2.5 hover:border-white/50 disabled:opacity-40";
   return (
-    <section aria-label="Live testnet" className="space-y-8">
-      <div className="rounded-2xl border border-dashed border-line p-6">
-        <h2 className="text-lg font-semibold">Try it on Robinhood Chain Testnet</h2>
-        <p className="mt-1 max-w-[60ch] text-sm text-slate">
-          You need a little testnet ETH for gas. The tokens are free: they are mock TSLA and USDG. Close and reopen the market with the buttons below (they use the project keeper, so they work on your machine). While it is closed a large order queues, and reopening runs the cross.
-        </p>
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button disabled={!!busy || !w.account} onClick={() => run("faucet", "50 TSLA and 10,000 USDG sent to your wallet.", faucet)} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Get test tokens</button>
-          <button disabled={!!busy} onClick={() => run("close", "Market closed. Large orders now queue.", () => keeper("close"))} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Close market</button>
-          <label className="text-sm">
-            <span className="sr-only">Reopen price</span>
-            <input aria-label="Reopen price" value={price} onChange={(e) => setPrice(e.target.value)} inputMode="decimal" className="num w-20 rounded-lg border border-line bg-paper px-3 py-2" />
-          </label>
-          <button disabled={!!busy} onClick={() => run("open", "Market reopened and the cross ran.", () => keeper("open"))} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Reopen market</button>
-          <button
-            disabled={!!busy || !w.account || c.snap?.mode !== 2}
-            onClick={() => run("cross", "The cross ran. Your fill is under Claims.", () => w.write({ address: d.hook, abi: hookAbi, functionName: "executeCross", args: [poolKey(d)] }))}
-            className="rounded-lg bg-cobalt px-4 py-2 text-sm font-medium text-night disabled:opacity-40"
-          >
-            Run the cross
-          </button>
-          {!w.account && <span className="text-sm text-slate">Connect a wallet to use these.</span>}
-          {w.account && c.snap?.mode !== 2 && <span className="text-sm text-slate">The cross can run once the market has reopened.</span>}
-        </div>
-        {busy && <p className="mt-3 text-sm text-slate">Working: {busy}</p>}
-        {msg && <p role="status" className={`mt-3 text-sm ${msg.ok ? "text-mint" : "text-rose"}`}>{msg.text}</p>}
+    <section aria-label="Live testnet" className="tile lg:col-span-12">
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 className="tag mr-2 text-lime" title="You need a little testnet ETH for gas. The tokens are free mock TSLA and USDG. Close and reopen use the project keeper, so they work on your machine.">[ Market controls ]</h2>
+        <button disabled={!!busy || !w.account} onClick={() => run("faucet", "50 TSLA and 10,000 USDG sent to your wallet.", faucet)} className={ghost}>Get test tokens</button>
+        <span className="mx-1 hidden h-6 w-px bg-white/10 md:block" aria-hidden="true" />
+        <button disabled={!!busy} onClick={() => run("close", "Market closed. Large orders now queue.", () => keeper("close"))} className={ghost}>Close market</button>
+        <label className="flex items-center gap-2 text-sm text-slate">
+          <span className="tag">Price</span>
+          <input aria-label="Reopen price" value={price} onChange={(e) => setPrice(e.target.value)} inputMode="decimal" className="num w-24 rounded-md border border-white/15 bg-transparent px-3 py-2 text-snow" />
+        </label>
+        <button disabled={!!busy} onClick={() => run("open", "Market reopened and the cross ran.", () => keeper("open"))} className={ghost}>Reopen market</button>
+        <button
+          disabled={!!busy || !w.account || c.snap?.mode !== 2}
+          onClick={() => run("cross", "The cross ran. Your fill is under Claims.", () => w.write({ address: d.hook, abi: hookAbi, functionName: "executeCross", args: [poolKey(d)] }))}
+          className="tag lift rounded-md bg-lime px-4 py-2.5 text-night disabled:opacity-40"
+        >
+          Run the cross
+        </button>
+        <span className="ml-auto text-sm text-slate" role="status">
+          {busy ? `Working: ${busy}` : msg ? <span className={msg.ok ? "text-mint" : "text-rose"}>{msg.text}</span> : !w.account ? "Connect a wallet to trade." : c.snap?.mode !== 2 ? "The cross runs once the market has reopened." : ""}
+        </span>
       </div>
-
     </section>
   );
 }

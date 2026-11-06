@@ -122,6 +122,21 @@ body {
   to { transform: translateX(-50%); }
 }
 
+/* a bento tile: the console is built from these */
+.tile {
+  display: flex;
+  flex-direction: column;
+  border-radius: 1rem;
+  border: 1px solid rgba(232, 238, 228, 0.1);
+  background: #0e1f19;
+  padding: 1.1rem 1.25rem;
+  min-width: 0;
+  transition: border-color 200ms ease;
+}
+.tile:hover {
+  border-color: rgba(201, 255, 92, 0.3);
+}
+
 .pulse-dot {
   animation: pulse-x 2.8s linear infinite;
 }

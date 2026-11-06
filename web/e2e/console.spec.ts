@@ -11,7 +11,7 @@ test("console: full weekend workflow", async ({ page }) => {
 
   await page.getByRole("button", { name: "Close market" }).click();
   await expect(page.getByTestId("mode")).toHaveText("Dark", { timeout: 30_000 });
-  await expect(page.getByText("Market closed: big trades wait for the open.")).toBeVisible();
+  await expect(page.getByText("Market closed. Big trades wait for the open.")).toBeVisible();
 
   // a large buy: the form says it will queue, and then it does
   await page.getByLabel(/Amount/).fill("10000");

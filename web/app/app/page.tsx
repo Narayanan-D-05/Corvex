@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Wordmark } from "@/components/Logo";
+import { CursorGlow } from "@/components/Motion";
 import { Overview } from "@/components/console/Overview";
 import { Queue } from "@/components/console/Queue";
 import { Orders } from "@/components/console/Orders";
@@ -38,22 +39,35 @@ export default function Console() {
   };
 
   return (
-    <div className="dark-ui min-h-screen">
-      <header className="border-b border-line bg-paper/90 backdrop-blur">
-        <div className="mx-auto flex max-w-[1100px] flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <Link href="/" aria-label="Corvex home"><Wordmark /></Link>
+    <div className="dark-ui relative isolate flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
+      <CursorGlow />
+      <div aria-hidden="true" className="columns pointer-events-none absolute inset-y-0 left-1/2 -z-10 w-[min(1400px,100%)] -translate-x-1/2" />
+      <div aria-hidden="true" className="pointer-events-none absolute -right-32 -top-24 -z-10 h-[520px] w-[520px] rounded-full bg-lime/10 blur-[130px]" />
+
+      <header className="shrink-0">
+        <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div className="flex items-center gap-6">
+            <Link href="/" aria-label="Corvex home" className="text-lime"><Wordmark /></Link>
+            <nav aria-label="Console" className="flex gap-1 rounded-lg border border-white/10 bg-white/[0.03] p-1">
+              {tabs.map((t) => (
+                <button key={t.id} onClick={() => pick(t.id)} aria-current={tab === t.id ? "page" : undefined} className={`tag rounded-md px-4 py-2 transition-colors ${tab === t.id ? "bg-lime text-night" : "text-snow/70 hover:bg-white/10 hover:text-snow"}`}>
+                  {t.label}
+                </button>
+              ))}
+            </nav>
+          </div>
           <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="rounded-md bg-paper-2 px-2.5 py-1">{chain.name}</span>
+            <span className="tag rounded-md border border-white/10 px-3 py-2 text-snow/70">{chain.name}</span>
             {w.account ? (
               <span className="flex items-center gap-2">
-                <span className="num">{short(w.account)}</span>
-                <button onClick={w.disconnect} className="text-slate underline-offset-4 hover:underline">Disconnect</button>
+                <span className="num rounded-md bg-white/[0.06] px-3 py-2">{short(w.account)}</span>
+                <button onClick={w.disconnect} className="tag text-slate hover:text-snow">Disconnect</button>
               </span>
             ) : (
               <span className="flex items-center gap-2">
-                <button onClick={() => w.connect().catch((e) => setWalletError(e.message))} className="rounded-lg bg-ink px-4 py-2 font-medium text-paper">Connect wallet</button>
+                <button onClick={() => w.connect().catch((e) => setWalletError(e.message))} className="tag lift rounded-md bg-lime px-4 py-2.5 text-night">Connect wallet</button>
                 {isLocal && (
-                  <select aria-label="Demo account" defaultValue="" onChange={(e) => e.target.value && w.useDemo(e.target.value as `0x${string}`)} className="rounded-lg border border-line bg-paper px-2 py-2">
+                  <select aria-label="Demo account" defaultValue="" onChange={(e) => e.target.value && w.useDemo(e.target.value as `0x${string}`)} className="rounded-md border border-white/15 bg-[#0e1f19] px-2 py-2.5">
                     <option value="">Demo account</option>
                     {DEMO_ACCOUNTS.slice(1).map((a, i) => <option key={a} value={a}>Demo {i + 1} ({short(a)})</option>)}
                   </select>
@@ -62,20 +76,13 @@ export default function Console() {
             )}
           </div>
         </div>
-        <nav aria-label="Console" className="mx-auto flex max-w-[1100px] gap-1 px-4">
-          {tabs.map((t) => (
-            <button key={t.id} onClick={() => pick(t.id)} aria-current={tab === t.id ? "page" : undefined} className={`border-b-2 px-4 py-2.5 text-sm font-medium ${tab === t.id ? "border-cobalt text-ink" : "border-transparent text-slate hover:text-ink"}`}>
-              {t.label}
-            </button>
-          ))}
-        </nav>
       </header>
 
-      <main className="mx-auto max-w-[1100px] px-4 py-10">
-        {walletError && <p role="alert" className="mb-6 text-rose">{walletError}</p>}
+      <main className="mx-auto flex w-full min-h-0 max-w-[1400px] flex-1 flex-col px-4 pb-4">
+        {walletError && <p role="alert" className="mb-3 text-rose">{walletError}</p>}
         {c.loading && <p className="text-slate">Reading the chain.</p>}
         {!c.loading && c.error && !c.snap && (
-          <div className="rounded-2xl border border-line p-6">
+          <div className="tile">
             <h1 className="text-xl font-semibold">Can&apos;t reach the pool</h1>
             <p className="mt-2 text-slate">{c.error}</p>
             <p className="mt-4 text-sm text-slate">
@@ -86,15 +93,15 @@ export default function Console() {
         {c.snap && c.deployment && (
           <>
             {tab === "trade" && (
-              <div className="space-y-8">
+              <div className="grid min-h-0 flex-1 gap-4 lg:grid-cols-12 lg:grid-rows-[auto_auto_minmax(0,1fr)]">
                 <Overview c={c} />
                 {isLocal ? <DemoControls c={c} w={w} onChange={c.refresh} /> : <LivePanel c={c} w={w} onChange={c.refresh} />}
                 <Orders c={c} w={w} onChange={c.refresh} />
                 <Queue c={c} />
               </div>
             )}
-            {tab === "prints" && <Prints c={c} />}
-            {tab === "liquidity" && <Liquidity c={c} />}
+            {tab === "prints" && <div className="min-h-0 flex-1 overflow-y-auto"><Prints c={c} /></div>}
+            {tab === "liquidity" && <div className="min-h-0 flex-1 overflow-y-auto"><Liquidity c={c} /></div>}
           </>
         )}
       </main>

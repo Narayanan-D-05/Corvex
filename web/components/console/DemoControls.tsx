@@ -50,23 +50,23 @@ export function DemoControls({ c, w, onChange }: { c: State; w: Wallet; onChange
     await tx(d.quoteToken, tokenAbi, "mint", [w.account, 1_000_000n * 10n ** BigInt(c.decimals.quote)]);
   };
 
+  const ghost = "tag lift rounded-md border border-white/20 px-4 py-2.5 hover:border-white/50 disabled:opacity-40";
   return (
-    <section aria-label="Demo controls" className="rounded-2xl border border-dashed border-line p-6">
-      <h2 className="text-lg font-semibold">Demo controls</h2>
-      <p className="mt-1 text-sm text-slate">Local chain only. These stand in for the exchange, the price feed and the CRE forwarder.</p>
-      <div className="mt-5 flex flex-wrap items-end gap-3">
-        <button disabled={!!busy} onClick={() => run("tokens", fund)} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Get test tokens</button>
-        <button disabled={!!busy} onClick={() => run("close", async () => { await tx(d.marketStatus, marketAbi, "setOpen", [false]); await tx(d.hook, hookAbi, "poke", [poolKey(d)]); })} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Close market</button>
-        <label className="text-sm">
-          <span className="block text-slate">Reopen price</span>
-          <input value={price} onChange={(e) => setPrice(e.target.value)} inputMode="decimal" className="num w-24 rounded-lg border border-line bg-paper px-3 py-2" />
+    <section aria-label="Demo controls" className="tile lg:col-span-12">
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 className="tag mr-2 text-lime" title="Local chain only. These stand in for the exchange, the price feed and the CRE forwarder.">[ Demo controls ]</h2>
+        <button disabled={!!busy} onClick={() => run("tokens", fund)} className={ghost}>Get test tokens</button>
+        <span className="mx-1 hidden h-6 w-px bg-white/10 md:block" aria-hidden="true" />
+        <button disabled={!!busy} onClick={() => run("close", async () => { await tx(d.marketStatus, marketAbi, "setOpen", [false]); await tx(d.hook, hookAbi, "poke", [poolKey(d)]); })} className={ghost}>Close market</button>
+        <label className="flex items-center gap-2 text-sm text-slate">
+          <span className="tag">Reopen price</span>
+          <input value={price} onChange={(e) => setPrice(e.target.value)} inputMode="decimal" className="num w-24 rounded-md border border-white/15 bg-transparent px-3 py-2 text-snow" />
         </label>
-        <button disabled={!!busy} onClick={() => run("open", async () => { await tx(d.marketStatus, marketAbi, "setOpen", [true]); await tx(d.feed, feedAbi, "setAnswer", [BigInt(Math.round(Number(price) * 1e8))]); await tx(d.hook, hookAbi, "poke", [poolKey(d)]); })} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Reopen market</button>
-        <button disabled={!!busy} onClick={() => run("cross", () => tx(d.hook, hookAbi, "executeCross", [poolKey(d)]))} className="rounded-lg bg-cobalt px-4 py-2 text-sm font-medium text-night disabled:opacity-40">Run cross</button>
-        <button disabled={!!busy || !d.oracleArb} onClick={() => run("attest", attest)} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Attest prints</button>
+        <button disabled={!!busy} onClick={() => run("open", async () => { await tx(d.marketStatus, marketAbi, "setOpen", [true]); await tx(d.feed, feedAbi, "setAnswer", [BigInt(Math.round(Number(price) * 1e8))]); await tx(d.hook, hookAbi, "poke", [poolKey(d)]); })} className={ghost}>Reopen market</button>
+        <button disabled={!!busy} onClick={() => run("cross", () => tx(d.hook, hookAbi, "executeCross", [poolKey(d)]))} className="tag lift rounded-md bg-lime px-4 py-2.5 text-night disabled:opacity-40">Run cross</button>
+        <button disabled={!!busy || !d.oracleArb} onClick={() => run("attest", attest)} className={ghost}>Attest prints</button>
+        <span className="ml-auto text-sm text-slate" role="status">{busy ? `Working: ${busy}` : msg ? <span className="text-rose">{msg}</span> : ""}</span>
       </div>
-      {busy && <p className="mt-3 text-sm text-slate">Working: {busy}</p>}
-      {msg && <p role="status" className="mt-3 text-sm text-rose">{msg}</p>}
     </section>
   );
 }
