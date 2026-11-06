@@ -21,10 +21,10 @@ For the submission video. Every step below runs today, on the live testnets or o
 
 | Time | On screen | Say |
 |---|---|---|
-| 0:00 | Landing page hero, then scroll into "How a cross works" | "Tokenized stocks trade all weekend. The price they track doesn't. LPs sell into stale quotes. Corvex is a Uniswap v4 hook that fixes that." |
-| 0:25 | The pinned 3D scene: queue, cross, surplus to LPs, falling fee | "While the reference is dark, big orders queue. When it reopens, everything clears at one price, the surplus goes to LPs with `donate()`, and a falling fee closes the gap." |
+| 0:00 | Landing page hero (the cross animation plays by itself), then "How a cross works" | "Tokenized stocks trade all weekend. The price they track doesn't. LPs sell into stale quotes. Corvex is a Uniswap v4 hook that fixes that." |
+| 0:25 | The animation: buys and sells match, only the net swaps against the pool, surplus to LPs | "While the reference is dark, big orders queue. When it reopens, everything clears at one price, the surplus goes to LPs with `donate()`, and a falling fee closes the gap." |
 | 0:50 | Console, Overview (live) | "This is Robinhood Chain Testnet. The pool is dark. Nothing fills at Friday's price." |
-| 1:05 | Get test tokens, then Orders: place a large buy | "A large buy queues instead of trading. It is a claim, not a fill." |
+| 1:05 | Get test tokens, Close market, then Orders: place a large buy (the "Large" quick amount) | "A large buy queues instead of trading. It is a claim, not a fill." |
 | 1:25 | Run a cross (`STAGE=open` in the terminal, or "Run the cross" once the market has reopened) | "The market reopens. Anyone can run the cross. Four checks pass, orders clear at one price, the surplus goes to LPs." |
 | 1:45 | Prints tab | "The hook records a Session Print and sends it over Chainlink CCIP to Arbitrum and Base." |
 | 2:05 | Terminal: `cre workflow simulate session-attestor --target staging-settings --non-interactive --broadcast --trigger-index 0 --evm-tx-hash <delivery tx> --evm-event-index 0` | "A Chainlink CRE workflow checks the print against the official open from an external API and writes the verdict on-chain." |

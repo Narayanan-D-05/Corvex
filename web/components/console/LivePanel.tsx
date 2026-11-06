@@ -32,8 +32,15 @@ export function LivePanel({ c, w, onChange }: { c: State; w: Wallet; onChange: (
 
   const faucet = async () => {
     if (!w.account) throw new Error("Connect a wallet first.");
-    await w.write({ address: d.stockToken, abi: tokenAbi, functionName: "mint", args: [w.account, 100n * 10n ** BigInt(c.decimals.stock)] });
-    await w.write({ address: d.quoteToken, abi: tokenAbi, functionName: "mint", args: [w.account, 50_000n * 10n ** BigInt(c.decimals.quote)] });
+    await w.write({ address: d.stockToken, abi: tokenAbi, functionName: "mint", args: [w.account, 50n * 10n ** BigInt(c.decimals.stock)] });
+    await w.write({ address: d.quoteToken, abi: tokenAbi, functionName: "mint", args: [w.account, 10_000n * 10n ** BigInt(c.decimals.quote)] });
+  };
+
+  const [price, setPrice] = useState("212");
+  const keeper = async (action: "close" | "open") => {
+    const res = await fetch("/api/keeper", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ action, price: action === "open" ? Number(price) : undefined }) });
+    const j = (await res.json()) as { error?: string };
+    if (!res.ok) throw new Error(j.error ?? "The keeper failed");
   };
 
   return (
@@ -41,10 +48,16 @@ export function LivePanel({ c, w, onChange }: { c: State; w: Wallet; onChange: (
       <div className="rounded-2xl border border-dashed border-line p-6">
         <h2 className="text-lg font-semibold">Try it on Robinhood Chain Testnet</h2>
         <p className="mt-1 max-w-[60ch] text-sm text-slate">
-          You need a little testnet ETH for gas. The tokens are free: they are mock TSLA and USDG. The pool closes and reopens on a schedule run by the team, so a large order queues whenever the pool is dark. Anyone can run the cross.
+          You need a little testnet ETH for gas. The tokens are free: they are mock TSLA and USDG. Close and reopen the market with the buttons below (they use the project keeper, so they work on your machine). While it is closed a large order queues, and reopening runs the cross.
         </p>
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <button disabled={!!busy || !w.account} onClick={() => run("faucet", "100 TSLA and 50,000 USDG sent to your wallet.", faucet)} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Get test tokens</button>
+          <button disabled={!!busy || !w.account} onClick={() => run("faucet", "50 TSLA and 10,000 USDG sent to your wallet.", faucet)} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Get test tokens</button>
+          <button disabled={!!busy} onClick={() => run("close", "Market closed. Large orders now queue.", () => keeper("close"))} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Close market</button>
+          <label className="text-sm">
+            <span className="sr-only">Reopen price</span>
+            <input aria-label="Reopen price" value={price} onChange={(e) => setPrice(e.target.value)} inputMode="decimal" className="num w-20 rounded-lg border border-line bg-paper px-3 py-2" />
+          </label>
+          <button disabled={!!busy} onClick={() => run("open", "Market reopened and the cross ran.", () => keeper("open"))} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Reopen market</button>
           <button
             disabled={!!busy || !w.account || c.snap?.mode !== 2}
             onClick={() => run("cross", "The cross ran. Your fill is under Claims.", () => w.write({ address: d.hook, abi: hookAbi, functionName: "executeCross", args: [poolKey(d)] }))}

@@ -1,41 +1,15 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
-
-const WeekendScene = dynamic(() => import("./WeekendScene"), { ssr: false });
+import { CrossMachine, caption, useCycle } from "./CrossMachine";
 
 export function Hero() {
-  const progress = useRef(0);
-  const [still, setStill] = useState(true);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    setStill(reduce);
-    setMounted(true);
-    if (reduce) return;
-    const onScroll = () => {
-      progress.current = Math.min(1, Math.max(0, window.scrollY / (window.innerHeight * 0.85)));
-    };
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
+  const { u } = useCycle(16);
   return (
     <section className="relative isolate flex min-h-[100svh] items-end overflow-hidden bg-night text-paper">
-      <div className="absolute inset-0 -z-10" aria-hidden="true">
-        {mounted && <WeekendScene progress={progress} mode="loop" still={still} />}
-      </div>
-      <div className="pointer-events-none absolute inset-x-0 bottom-6 z-10 mx-auto hidden max-w-[1100px] justify-end gap-5 px-4 text-xs text-paper/70 md:flex" aria-hidden="true">
-        {[["#ff8a73", "Pool with no hook"], ["#eef2fa", "Corvex pool"], ["#6f95ff", "Chainlink price"], ["#7ea0ff", "Queued order"], ["#2ee6a0", "Filled at the cross"]].map(([c, l]) => (
-          <span key={l} className="flex items-center gap-2">
-            <i className="inline-block h-2 w-2 rounded-full" style={{ background: c }} />
-            {l}
-          </span>
-        ))}
+      <div className="pointer-events-none absolute inset-x-2 top-20 -z-10 opacity-60 md:inset-x-auto md:right-[1%] md:top-24 md:w-[38%] md:opacity-100" aria-hidden="true">
+        <CrossMachine u={u} buys={10} sells={6} />
+        <p className="mt-2 hidden max-w-[44ch] text-sm text-paper/70 md:block">{caption(u, 10, 6, false)}</p>
       </div>
       <div className="relative z-10 mx-auto w-full max-w-[1100px] px-4 pb-20 pt-40 md:pb-28">
         <h1 className="max-w-[12ch] font-display text-[clamp(3.2rem,10vw,8.5rem)] leading-[0.95] tracking-tight">

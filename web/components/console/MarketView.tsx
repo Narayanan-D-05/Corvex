@@ -1,79 +1,67 @@
 "use client";
 
-import dynamic from "next/dynamic";
-import { useEffect, useRef, useState } from "react";
-import { usePlayhead } from "@/components/WeekendTape";
-import { marketViews } from "@/lib/weekend";
+import { useEffect, useState } from "react";
+import { CrossMachine, PHASE, caption, useCycle } from "@/components/CrossMachine";
 import type { State } from "@/lib/useCorvex";
 
-const WeekendScene = dynamic(() => import("@/components/WeekendScene"), { ssr: false });
+type View = { id: string; label: string; line: string; buys: number; sells: number; instant?: boolean; from?: number };
+
+const views: View[] = [
+  { id: "weekday", label: "Weekday", line: "The market is open and the feed is live, so every trade fills at once against the pool.", buys: 4, sells: 3, instant: true },
+  { id: "weekend", label: "Weekend", line: "The market is closed. Large orders wait in the queue, then clear together at the open.", buys: 10, sells: 6 },
+  { id: "holiday", label: "Holiday", line: "A longer closure means a longer queue. It still clears at one price, and the pool only sees the net.", buys: 20, sells: 10 },
+  { id: "reopen", label: "After reopen", line: "The feed is back. The queue matches itself, the net swaps against the pool, and the surplus goes to LPs.", buys: 10, sells: 6, from: PHASE.match - 0.04 },
+];
 
 /** Which view matches the live pool: open, dark, or past the reopen. */
-const liveView = (mode: number) => (mode === 0 ? 0 : mode === 1 ? 1 : 3);
+const liveView = (mode: number) => (mode === 0 ? "weekday" : mode === 1 ? "weekend" : "reopen");
 
-/** The price in 3D. Switch between a weekday, a weekend, a holiday and the moment after the reopen. */
+/** How the cross works, drawn. Pick a kind of day, or the real queue when there is one. */
 export function MarketView({ c }: { c: State }) {
-  const live = liveView(c.snap!.mode);
-  const [i, setI] = useState(live);
-  const [touched, setTouched] = useState(false);
-  const { t, setT, playing, setPlaying } = usePlayhead();
-  const progress = useRef(0);
-  const [still, setStill] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  const v = marketViews[i];
+  const open = c.orders.filter((o) => o.status === 0);
+  const liveQueue: View | null = open.length
+    ? { id: "live", label: "Live queue", line: "The orders waiting in this pool right now, drawn as they will clear.", buys: open.filter((o) => o.buy).length, sells: open.filter((o) => !o.buy).length, from: 0 }
+    : null;
+  const all = liveQueue ? [liveQueue, ...views] : views;
+  const [pick, setPick] = useState<string | null>(null);
+  const [paused, setPaused] = useState(false);
+  const current = all.find((v) => v.id === pick) ?? liveQueue ?? all.find((v) => v.id === liveView(c.snap!.mode))!;
+  const { u, setU, still } = useCycle(16, { from: current.from ?? 0, paused });
+  useEffect(() => setU(current.from ?? 0), [current.id, current.from, setU]);
 
-  useEffect(() => {
-    setMounted(true);
-    setStill(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  }, []);
-  // follow the live pool until the person picks a view themselves
-  useEffect(() => {
-    if (!touched) setI(live);
-  }, [live, touched]);
-  useEffect(() => {
-    setT(0);
-    setPlaying(!still);
-  }, [i, still, setT, setPlaying]);
-  useEffect(() => {
-    progress.current = still ? 1 : v.from + (1 - v.from) * t;
-  }, [t, v.from, still]);
+  const m = current.instant ? 0 : Math.min(current.buys, current.sells);
+  const net = Math.abs(current.buys - current.sells);
 
   return (
-    <section aria-label="Price in 3D" className="overflow-hidden rounded-2xl border border-line bg-night text-paper">
+    <section aria-label="How the cross works" className="overflow-hidden rounded-2xl border border-line bg-night text-paper">
       <div className="flex flex-wrap items-center justify-between gap-3 px-5 pt-5">
         <div role="tablist" aria-label="Market view" className="flex flex-wrap gap-2">
-          {marketViews.map((m, k) => (
+          {all.map((v) => (
             <button
-              key={m.id}
+              key={v.id}
               role="tab"
-              aria-selected={i === k}
-              onClick={() => (setTouched(true), setI(k))}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${i === k ? "bg-cobalt text-white" : "bg-paper/10 text-paper/80 hover:bg-paper/15"}`}
+              aria-selected={current.id === v.id}
+              onClick={() => setPick(v.id)}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${current.id === v.id ? "bg-cobalt text-white" : "bg-paper/10 text-paper/80 hover:bg-paper/15"}`}
             >
-              {m.label}
+              {v.label}
             </button>
           ))}
         </div>
         <span className="text-xs text-paper/60">Live pool: {["Normal", "Dark", "Awaiting reopen", "Auction"][c.snap!.mode]}</span>
       </div>
-      <p className="px-5 pt-3 text-paper/80">{v.line}</p>
-      <div className="relative mt-3 aspect-[16/9] w-full" aria-hidden="true">
-        {mounted && <WeekendScene key={v.id} progress={progress} mode="scrub" still={still} scenario={v.scenario} />}
+      <p className="px-5 pt-3 text-paper/80">{current.line}</p>
+      <div className="px-5 pt-2">
+        <CrossMachine u={u} buys={current.buys} sells={current.sells} instant={current.instant} />
       </div>
-      <div className="flex items-center gap-4 border-t border-paper/10 px-5 py-3">
-        <button onClick={() => (t >= 1 ? (setT(0), setPlaying(true)) : setPlaying(!playing))} className="w-20 rounded-lg bg-paper/10 px-3 py-1.5 text-sm hover:bg-paper/15">
-          {playing ? "Pause" : t >= 1 ? "Replay" : "Play"}
-        </button>
-        <input aria-label="Time in the market view" type="range" min={0} max={1000} value={Math.round(t * 1000)} onChange={(e) => (setPlaying(false), setT(Number(e.target.value) / 1000))} className="w-full accent-[#2650ff]" />
+      <p className="px-5 text-paper/90" aria-live="off">{caption(u, current.buys, current.sells, !!current.instant)}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-paper/10 px-5 py-3 text-sm">
+        <button onClick={() => setPaused((p) => !p)} disabled={still} className="rounded-lg bg-paper/10 px-3 py-1.5 hover:bg-paper/15 disabled:opacity-40">{paused ? "Play" : "Pause"}</button>
+        <span><span className="num">{current.buys}</span> buys</span>
+        <span><span className="num">{current.sells}</span> sells</span>
+        {!current.instant && <span className="text-[#2ee6a0]"><span className="num">{m}</span> matched with each other</span>}
+        <span><span className="num">{current.instant ? current.buys + current.sells : net}</span> {current.instant ? "swap against the pool" : "go to the pool"}</span>
       </div>
-      <ul className="flex flex-wrap gap-x-5 gap-y-1 px-5 pb-4 text-xs text-paper/65">
-        <li><i className="mr-2 inline-block h-2 w-2 rounded-full bg-[#ff8a73]" />Pool with no hook</li>
-        <li><i className="mr-2 inline-block h-2 w-2 rounded-full bg-paper" />Corvex pool</li>
-        <li><i className="mr-2 inline-block h-2 w-2 rounded-full bg-[#6f95ff]" />Chainlink price (dashed while dark)</li>
-        <li><i className="mr-2 inline-block h-2 w-2 rounded-full bg-[#7ea0ff]" />Queued order</li>
-        <li><i className="mr-2 inline-block h-2 w-2 rounded-full bg-[#2ee6a0]" />Filled at the cross</li>
-        <li><i className="mr-2 inline-block h-2 w-2 rounded-full bg-[#e0a030]" />Refunded</li>
-      </ul>
     </section>
   );
 }

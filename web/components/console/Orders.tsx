@@ -37,6 +37,37 @@ export function Orders({ c, w, onChange }: { c: State; w: Wallet; onChange: () =
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
+  const [bal, setBal] = useState<{ stock: bigint; quote: bigint } | null>(null);
+  useEffect(() => {
+    if (!w.account) return setBal(null);
+    let live = true;
+    Promise.all([
+      publicClient.readContract({ address: d.stockToken, abi: tokenAbi, functionName: "balanceOf", args: [w.account] }),
+      publicClient.readContract({ address: d.quoteToken, abi: tokenAbi, functionName: "balanceOf", args: [w.account] }),
+    ]).then(([stock, quote]) => live && setBal({ stock: stock as bigint, quote: quote as bigint }));
+    return () => {
+      live = false;
+    };
+  }, [w.account, c.updatedAt, d.stockToken, d.quoteToken]);
+
+  async function getTokens() {
+    setMsg(null);
+    setBusy(true);
+    try {
+      if (!w.account) throw new Error("Connect a wallet first.");
+      setMsg({ ok: true, text: "Confirm two small transactions to mint free test tokens." });
+      await w.write({ address: d.stockToken, abi: tokenAbi, functionName: "mint", args: [w.account, 50n * 10n ** BigInt(c.decimals.stock)] });
+      await w.write({ address: d.quoteToken, abi: tokenAbi, functionName: "mint", args: [w.account, 10_000n * 10n ** BigInt(c.decimals.quote)] });
+      setMsg({ ok: true, text: "50 TSLA and 10,000 USDG added." });
+      onChange();
+    } catch (e) {
+      setMsg({ ok: false, text: e instanceof Error ? e.message.split("\n")[0] : "Could not mint" });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const quick = side === "buy" ? [["100", "Small, fills now"], ["3000", "Large, queues when closed"]] : [["0.5", "Small, fills now"], ["15", "Large, queues when closed"]];
   const num = Number(amount);
   const est = useMemo(() => estimate(c, side === "buy", num), [c, side, num]);
   const ref = s.mode === 1 ? Number(s.darkRefPrice) / 1e18 : Number(s.poolPrice) / 1e18;
@@ -61,8 +92,15 @@ export function Orders({ c, w, onChange }: { c: State; w: Wallet; onChange: () =
       const amt = parseUnits(amount, inDec);
       const spender = from === "base" && side === "buy" ? d.gatewayBase! : d.swapRouter;
 
+      const have = (await publicClient.readContract({ address: inToken, abi: tokenAbi, functionName: "balanceOf", args: [owner] })) as bigint;
+      if (have < amt) throw new Error(`You hold ${fmtUnits(have, inDec, 2)} ${side === "buy" ? "USDG" : "TSLA"}. Press Get test tokens first, or lower the amount.`);
+
       const allowance = (await publicClient.readContract({ address: inToken, abi: tokenAbi, functionName: "allowance", args: [owner, spender] })) as bigint;
-      if (allowance < amt) await w.write({ address: inToken, abi: tokenAbi, functionName: "approve", args: [spender, maxUint256] });
+      if (allowance < amt) {
+        setMsg({ ok: true, text: `Step 1 of 2: allow the pool router to spend exactly ${amount} ${side === "buy" ? "USDG" : "TSLA"}. Confirm it in your wallet.` });
+        await w.write({ address: inToken, abi: tokenAbi, functionName: "approve", args: [spender, amt] });
+      }
+      setMsg({ ok: true, text: allowance < amt ? "Step 2 of 2: confirm the order in your wallet." : "Confirm the order in your wallet." });
 
       if (from === "base" && side === "buy") {
         const fee = (await publicClient.readContract({ address: d.gatewayBase!, abi: gatewayAbi, functionName: "quote", args: [d.poolId, owner, d.quoteToken, amt, limitPrice] })) as bigint;
@@ -129,9 +167,22 @@ export function Orders({ c, w, onChange }: { c: State; w: Wallet; onChange: () =
             </select>
           </label>
         )}
+        {w.account && bal && (
+          <p className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-paper-2 px-3 py-2 text-sm">
+            <span className="num">{fmtUnits(bal.quote, c.decimals.quote, 0)} USDG · {fmtUnits(bal.stock, c.decimals.stock, 2)} TSLA</span>
+            {(side === "buy" ? bal.quote : bal.stock) === 0n && (
+              <button type="button" onClick={getTokens} disabled={busy} className="rounded-md bg-ink px-2.5 py-1 text-paper disabled:opacity-40">Get test tokens</button>
+            )}
+          </p>
+        )}
         <label className="block text-sm">
           <span className="text-slate">Amount ({unit})</span>
           <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.0" className="num mt-1 w-full rounded-lg border border-line bg-paper px-3 py-2" />
+          <span className="mt-2 flex flex-wrap gap-2">
+            {quick.map(([v, tip]) => (
+              <button type="button" key={v} title={tip} onClick={() => setAmount(v)} className="rounded-md border border-line px-2.5 py-1 text-xs hover:bg-paper-2">{v} <span className="text-slate">{tip}</span></button>
+            ))}
+          </span>
         </label>
         <label className="block text-sm">
           <span className="text-slate">{side === "buy" ? "Max price" : "Min price"} (optional)</span>

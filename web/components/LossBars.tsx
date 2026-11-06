@@ -14,11 +14,7 @@ export function LossBars({ scenario, reveal = true }: { scenario: Scenario; reve
   const ref = useRef<HTMLDivElement>(null);
   const [seen, setSeen] = useState(false);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => e.isIntersecting && (setSeen(true), io.disconnect()), { threshold: 0.3 });
-    io.observe(el);
-    return () => io.disconnect();
+    if (ref.current) setSeen(true);
   }, []);
 
   const max = Math.max(...rows.map((r) => Math.abs(scenario.pnl[r.key])), 1);

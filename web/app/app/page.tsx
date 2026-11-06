@@ -90,8 +90,8 @@ export default function Console() {
               <div className="space-y-8">
                 <Overview c={c} />
                 <MarketView c={c} />
-                <Queue c={c} />
                 {isLocal ? <DemoControls c={c} w={w} onChange={c.refresh} /> : <LivePanel c={c} w={w} onChange={c.refresh} />}
+                <Queue c={c} />
               </div>
             )}
             {tab === "orders" && <Orders c={c} w={w} onChange={c.refresh} />}

@@ -30,11 +30,7 @@ function useInView<T extends Element>() {
   const ref = useRef<T>(null);
   const [seen, setSeen] = useState(false);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver(([e]) => e.isIntersecting && (setSeen(true), io.disconnect()), { threshold: 0.4 });
-    io.observe(el);
-    return () => io.disconnect();
+    if (ref.current) setSeen(true);
   }, []);
   return [ref, seen] as const;
 }

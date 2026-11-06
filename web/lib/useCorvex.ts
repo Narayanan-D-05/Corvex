@@ -53,12 +53,17 @@ export type Print = {
 
 export type CrossLog = { price: bigint; volume: bigint; orders: number; donated0: bigint; donated1: bigint; sessionId: bigint };
 
+/** One past or present session's queue: how many buys and sells it held and how they ended. */
+export type SessionQueue = { id: bigint; buys: number; sells: number; open: number; buyIn: bigint; sellIn: bigint };
+
 export type State = {
   loading: boolean;
   error: string | null;
   deployment: Deployment | null;
   snap: Snapshot | null;
   orders: Order[];
+  /** the last few sessions that had orders, newest first */
+  sessions: SessionQueue[];
   /** cross-chain orders are owned by a vault; this maps each vault to the user it belongs to */
   vaultUsers: Record<string, Address>;
   prints: Print[];
@@ -74,6 +79,7 @@ const empty: State = {
   deployment: null,
   snap: null,
   orders: [],
+  sessions: [],
   vaultUsers: {},
   prints: [],
   crosses: [],
@@ -107,6 +113,30 @@ export function useCorvex(intervalMs = 3000) {
         functionName: "getOrders",
         args: [d.poolId, snap.sessionId],
       })) as unknown as Order[];
+
+      const past: bigint[] = [];
+      for (let s = snap.sessionId; s >= 0n && past.length < 5; s--) {
+        past.push(s);
+        if (s === 0n) break;
+      }
+      const sessions = (
+        await Promise.all(
+          past.map(async (id) => {
+            const list = id === snap.sessionId ? orders : ((await publicClient.readContract({ address: d.hook, abi: hookAbi, functionName: "getOrders", args: [d.poolId, id] })) as unknown as Order[]);
+            if (list.length === 0) return null;
+            const buys = list.filter((o) => o.buy);
+            const sells = list.filter((o) => !o.buy);
+            return {
+              id,
+              buys: buys.length,
+              sells: sells.length,
+              open: list.filter((o) => o.status === 0).length,
+              buyIn: buys.reduce((t, o) => t + o.amountIn, 0n),
+              sellIn: sells.reduce((t, o) => t + o.amountIn, 0n),
+            } satisfies SessionQueue;
+          }),
+        )
+      ).filter((x): x is SessionQueue => x !== null);
 
       const vaultUsers: Record<string, Address> = {};
       const ccipOwners = [...new Set(orders.filter((o) => o.srcSelector !== 0n).map((o) => o.owner))];
@@ -158,6 +188,7 @@ export function useCorvex(intervalMs = 3000) {
         deployment: d,
         snap,
         orders,
+        sessions,
         vaultUsers,
         prints,
         crosses,
