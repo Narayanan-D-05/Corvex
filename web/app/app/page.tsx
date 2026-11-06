@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Wordmark } from "@/components/Logo";
 import { Overview } from "@/components/console/Overview";
+import { MarketView } from "@/components/console/MarketView";
+import { Queue } from "@/components/console/Queue";
 import { Orders } from "@/components/console/Orders";
 import { Prints } from "@/components/console/Prints";
 import { Liquidity } from "@/components/console/Liquidity";
@@ -87,6 +89,8 @@ export default function Console() {
             {tab === "overview" && (
               <div className="space-y-8">
                 <Overview c={c} />
+                <MarketView c={c} />
+                <Queue c={c} />
                 {isLocal ? <DemoControls c={c} w={w} onChange={c.refresh} /> : <LivePanel c={c} w={w} onChange={c.refresh} />}
               </div>
             )}

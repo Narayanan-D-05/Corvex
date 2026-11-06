@@ -15,7 +15,7 @@ const sstep = (a: number, b: number, x: number) => {
   const t = clamp((x - a) / (b - a));
   return t * t * (3 - 2 * t);
 };
-const FAIR = [[0, 200], [CROSS - 0.005, 200], [CROSS + 0.005, 212], [1, 212]] as const;
+const FAIR_DEFAULT = [[0, 200], [CROSS - 0.005, 200], [CROSS + 0.005, 212], [1, 212]] as const;
 
 /** A curve that is parameterised by time, so drawing the first part of a tube is the same as playing the weekend. */
 class TimeCurve extends THREE.Curve<THREE.Vector3> {
@@ -67,16 +67,16 @@ function Line({ keys, z, color, tRef, from = 0, to = 1, r = 0.1 }: { keys: Weeke
 }
 
 /** The Chainlink price: dashed and grey while the feed is dark, solid blue once it is back. */
-function Fair({ tRef }: { tRef: Ref }) {
+function Fair({ tRef, keys, dark }: { tRef: Ref; keys: WeekendScenario["noHook"]; dark: number }) {
   const D = 34;
   const dashes = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   useFrame(() => {
     const t = tRef.current;
     for (let i = 0; i < D; i++) {
-      const ti = ((i + 0.5) / D) * (CROSS - 0.005);
-      dummy.position.set(X(ti), Y(200), LANE.fair);
-      dummy.scale.setScalar(t > ti ? 1 : 0.0001);
+      const ti = ((i + 0.5) / D) * dark;
+      dummy.position.set(X(ti), Y(at(keys, ti)), LANE.fair);
+      dummy.scale.setScalar(dark > 0 && t > ti ? 1 : 0.0001);
       dummy.updateMatrix();
       dashes.current!.setMatrixAt(i, dummy.matrix);
     }
@@ -88,14 +88,14 @@ function Fair({ tRef }: { tRef: Ref }) {
         <boxGeometry args={[0.26, 0.07, 0.07]} />
         <meshBasicMaterial color="#8794ad" />
       </instancedMesh>
-      <Line keys={FAIR} z={LANE.fair} color="#6f95ff" tRef={tRef} from={CROSS - 0.005} to={1} r={0.1} />
+      <Line keys={keys} z={LANE.fair} color="#6f95ff" tRef={tRef} from={Math.max(0, dark - 0.005)} to={1} r={0.1} />
     </>
   );
 }
 
 /** The 2% corridor around Friday's close, as a glass box that the Corvex lane runs through. */
-function Band({ tRef }: { tRef: Ref }) {
-  const w = X(CROSS) - X(0);
+function Band({ tRef, until }: { tRef: Ref; until: number }) {
+  const w = X(until) - X(0);
   const h = Y(200 * 1.02) - Y(200 * 0.98);
   const box = useMemo(() => new THREE.BoxGeometry(w, h, 1.9), [w, h]);
   const edges = useMemo(() => new THREE.EdgesGeometry(box), [box]);
@@ -107,7 +107,7 @@ function Band({ tRef }: { tRef: Ref }) {
     edge.current!.opacity = 0.6 * k;
   });
   return (
-    <group position={[(X(0) + X(CROSS)) / 2, Y(200), 0]}>
+    <group position={[(X(0) + X(until)) / 2, Y(200), 0]}>
       <mesh geometry={box}>
         <meshBasicMaterial ref={fill} color="#2650ff" transparent opacity={0.1} depthWrite={false} />
       </mesh>
@@ -119,21 +119,21 @@ function Band({ tRef }: { tRef: Ref }) {
 }
 
 /** Queued orders as blocks at their limit prices. At the cross they slide to one price: filled turn green, refunded fade. */
-function Orders({ tRef, list }: { tRef: Ref; list: WeekendScenario["orders"] }) {
+function Orders({ tRef, list, pStar }: { tRef: Ref; list: WeekendScenario["orders"]; pStar: number }) {
   const ref = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   const col = useMemo(() => new THREE.Color(), []);
   const n = Math.max(1, list.length);
 
   useLayoutEffect(() => {
-    list.forEach((_, i) => ref.current!.setColorAt(i, col.set("#ffffff")));
+    for (let i = 0; i < n; i++) ref.current!.setColorAt(i, col.set("#ffffff"));
     ref.current!.instanceColor!.needsUpdate = true;
-  }, [list, col]);
+  }, [n, col]);
 
   useFrame(({ clock }) => {
     const t = tRef.current;
     list.forEach((o, i) => {
-      const p = orderAt(o, t);
+      const p = orderAt(o, t, pStar);
       const pop = p.shown ? sstep(o.at, o.at + 0.03, t) : 0;
       const gone = o.kind === "refunded" ? sstep(0.06, 0.9, p.slide) : 0;
       const bob = Math.sin(clock.elapsedTime * 1.6 + i) * 0.05;
@@ -146,6 +146,11 @@ function Orders({ tRef, list }: { tRef: Ref; list: WeekendScenario["orders"] }) 
       col.set(base).lerp(new THREE.Color(o.kind === "filled" ? "#2ee6a0" : "#e0a030"), sstep(0, 0.4, p.slide));
       ref.current!.setColorAt(i, col);
     });
+    if (list.length === 0) {
+      dummy.scale.setScalar(0.0001);
+      dummy.updateMatrix();
+      ref.current!.setMatrixAt(0, dummy.matrix);
+    }
     ref.current!.instanceMatrix.needsUpdate = true;
     ref.current!.instanceColor!.needsUpdate = true;
   });
@@ -159,7 +164,7 @@ function Orders({ tRef, list }: { tRef: Ref; list: WeekendScenario["orders"] }) 
 }
 
 /** The cross: a ring the Corvex line passes through, with a flash when it fires. */
-function CrossRing({ tRef }: { tRef: Ref }) {
+function CrossRing({ tRef, pStar }: { tRef: Ref; pStar: number }) {
   const ring = useRef<THREE.Mesh>(null);
   const inner = useRef<THREE.Mesh>(null);
   const flash = useRef<THREE.Mesh>(null);
@@ -175,7 +180,7 @@ function CrossRing({ tRef }: { tRef: Ref }) {
     (flash.current!.material as THREE.MeshBasicMaterial).opacity = f * 0.55;
   });
   return (
-    <group position={[X(0.9), Y(P_STAR), 0]} rotation={[0, Math.PI / 2, 0]}>
+    <group position={[X(0.9), Y(pStar), 0]} rotation={[0, Math.PI / 2, 0]}>
       <mesh ref={ring}>
         <torusGeometry args={[2.1, 0.05, 10, 120]} />
         <meshBasicMaterial color="#4d73ff" />
@@ -261,7 +266,7 @@ function Driver({ tRef, progress, mode, still }: { tRef: Ref; progress: Ref; mod
   return null;
 }
 
-function Rig({ progress, mode, still }: { progress: Ref; mode: "loop" | "scrub"; still: boolean }) {
+function Rig({ progress, mode, still, focus }: { progress: Ref; mode: "loop" | "scrub"; still: boolean; focus: number }) {
   const { camera, pointer } = useThree();
   const target = useMemo(() => new THREE.Vector3(), []);
   useFrame(({ clock }) => {
@@ -281,7 +286,7 @@ function Rig({ progress, mode, still }: { progress: Ref; mode: "loop" | "scrub";
     const py = still ? 0 : pointer.y * 0.35;
     target.set(Math.sin(angle) * radius + px, height + py, Math.cos(angle) * radius);
     camera.position.lerp(target, 0.07);
-    camera.lookAt(0, 1.4, 0);
+    camera.lookAt(0, focus, 0);
   });
   return null;
 }
@@ -291,8 +296,10 @@ function World({ progress, mode, still, scenario }: { progress: Ref; mode: "loop
   const { size } = useThree();
   const narrow = size.width < 768;
   const hero = mode === "loop";
+  const dark = scenario.darkUntil ?? CROSS;
+  const pStar = scenario.pStar ?? P_STAR;
   const pos: [number, number, number] = hero ? (narrow ? [0, 2.4, 0] : [4.6, 0.6, 0]) : [0, narrow ? 0.2 : 0, 0];
-  const scale = hero ? (narrow ? 0.42 : 0.6) : narrow ? 0.5 : 0.72;
+  const scale = (hero ? (narrow ? 0.42 : 0.6) : narrow ? 0.5 : 0.72) * (dark > 0 ? 1 : 1.45);
   return (
     <>
       <color attach="background" args={["#0b1730"]} />
@@ -300,17 +307,17 @@ function World({ progress, mode, still, scenario }: { progress: Ref; mode: "loop
       <ambientLight intensity={1.1} />
       <directionalLight position={[4, 8, 6]} intensity={2.2} />
       <Driver tRef={tRef} progress={progress} mode={mode} still={still} />
-      <Rig progress={progress} mode={mode} still={still} />
+      <Rig progress={progress} mode={mode} still={still} focus={dark > 0 ? 1.4 : 0.1} />
       <gridHelper args={[60, 60, "#2650ff", "#142852"]} position={[0, -3.4, 0]} />
       <Dust />
       <group position={pos} scale={scale}>
-        <Band tRef={tRef} />
+        {dark > 0 && <Band tRef={tRef} until={dark - 0.005} />}
         <Playhead tRef={tRef} />
         <Line keys={scenario.noHook} z={LANE.noHook} color="#ff8a73" tRef={tRef} />
         <Line keys={scenario.corvex} z={LANE.corvex} color="#eef2fa" tRef={tRef} r={0.13} />
-        <Fair tRef={tRef} />
-        <Orders tRef={tRef} list={scenario.orders} />
-        <CrossRing tRef={tRef} />
+        <Fair tRef={tRef} keys={scenario.fair ?? FAIR_DEFAULT} dark={dark} />
+        <Orders tRef={tRef} list={scenario.orders} pStar={pStar} />
+        {dark > 0 && <CrossRing tRef={tRef} pStar={pStar} />}
       </group>
     </>
   );

@@ -39,7 +39,13 @@ export type WeekendOrder = {
 };
 
 export type WeekendScenario = {
-  id: "weekend" | "auction";
+  id: "weekend" | "auction" | "weekday" | "holiday";
+  /** the reference price the cross clears at; defaults to P_STAR */
+  pStar?: number;
+  /** time until which the reference is dark; 0 means the market is open all along */
+  darkUntil?: number;
+  /** the Chainlink price path */
+  fair?: Keys;
   title: string;
   note: string;
   noHook: Keys;
@@ -94,12 +100,56 @@ export function queueAt(list: WeekendOrder[], t: number) {
 }
 
 /** Where an order sits at time t: at its limit while it waits, then sliding to the cross price. */
-export function orderAt(o: WeekendOrder, t: number) {
+export function orderAt(o: WeekendOrder, t: number, pStar = P_STAR) {
   const slide = ease(Math.min(1, Math.max(0, (t - CROSS) / 0.05)));
   return {
     time: o.at + (0.9 - o.at) * slide,
-    price: o.limit + (P_STAR - o.limit) * slide,
+    price: o.limit + (pStar - o.limit) * slide,
     shown: t >= o.at,
     slide,
   };
 }
+
+/** The console's market view: what a pool does on a weekday, over a weekend, over a holiday, and after the reopen. */
+export type MarketView = { id: "weekday" | "weekend" | "holiday" | "reopen"; label: string; line: string; scenario: WeekendScenario; from: number };
+
+const weekday: WeekendScenario = {
+  id: "weekday",
+  darkUntil: 0,
+  fair: [[0, 200], [0.2, 200.8], [0.5, 199.9], [0.8, 201.2], [1, 200.6]],
+  title: "Weekday",
+  note: "The market is open, so the price feed is live and the pool simply follows it. Every trade fills at once.",
+  noHook: [[0, 200], [0.2, 200.7], [0.5, 200], [0.8, 201.1], [1, 200.6]],
+  corvex: [[0, 200], [0.2, 200.8], [0.5, 199.9], [0.8, 201.2], [1, 200.6]],
+  lpNoHook: [[0, 0], [1, 0]],
+  lpCorvex: [[0, 0], [1, 0]],
+  orders: [],
+  pnl: { noHook: 0, corvex: 0 },
+};
+
+const holiday: WeekendScenario = {
+  id: "holiday",
+  pStar: 207.8,
+  title: "Holiday",
+  note: "A long closure: the feed is dark for days and the gap at the reopen is 4%.",
+  noHook: [[0, 200], [0.2, 200], [0.22, 201.6], [0.5, 201.6], [0.52, 203.8], [0.82, 203.8], [0.86, 205], [0.9, 208], [1, 208]],
+  corvex: [[0, 200], [0.12, 200], [0.14, 201.5], [0.4, 201.5], [0.42, 202.6], [0.85, 202.6], [0.89, 207.8], [1, 208]],
+  fair: [[0, 200], [CROSS - 0.005, 200], [CROSS + 0.005, 208], [1, 208]],
+  lpNoHook: [[0, 0], [1, -60]],
+  lpCorvex: [[0, 0], [1, 0]],
+  orders: [
+    { id: 1, side: "buy", at: 0.25, limit: 210, usd: 4000, kind: "filled", story: "Queued through the holiday. Its $210 limit is above the cross price, so it filled at $207.80." },
+    { id: 2, side: "sell", at: 0.5, limit: 205, usd: 2500, kind: "filled", story: "A sell with a $205 floor that waited out the holiday and sold at $207.80." },
+    { id: 3, side: "buy", at: 0.7, limit: 204, usd: 1500, kind: "refunded", story: "This buyer would only pay $204. The cross cleared higher, so the order was refunded." },
+  ],
+  pnl: { noHook: -60, corvex: 0 },
+};
+
+const weekendView: WeekendScenario = { ...scenarios[0], fair: [[0, 200], [CROSS - 0.005, 200], [CROSS + 0.005, 212], [1, 212]] };
+
+export const marketViews: MarketView[] = [
+  { id: "weekday", label: "Weekday", line: "The market is open. The price feed is live, so every trade fills at once and the pool follows the feed.", scenario: weekday, from: 0 },
+  { id: "weekend", label: "Weekend", line: "The market is closed. Trades inside the 2% band still fill. Bigger ones wait in the queue as claims.", scenario: weekendView, from: 0 },
+  { id: "holiday", label: "Holiday", line: "A longer closure. The queue builds for days and the reopen gap is 4%, cleared at one price.", scenario: holiday, from: 0 },
+  { id: "reopen", label: "After reopen", line: "The feed is back. Four checks pass, the queue clears at one price, and a falling fee closes what is left of the gap.", scenario: weekendView, from: 0.78 },
+];
