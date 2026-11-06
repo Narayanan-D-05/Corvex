@@ -18,6 +18,7 @@ import {MockStockToken} from "../src/mocks/MockStockToken.sol";
 import {MockAggregator} from "../src/mocks/MockAggregator.sol";
 import {SessionPrintOracle} from "../src/ccip/SessionPrintOracle.sol";
 import {OrderGateway} from "../src/ccip/OrderGateway.sol";
+import {ReopenReceiver} from "../src/ccip/ReopenReceiver.sol";
 import {SessionLedger} from "../src/consumers/SessionLedger.sol";
 import {SessionPrint, KIND_CLOSE, KIND_OPEN} from "../src/types/SessionPrint.sol";
 
@@ -33,6 +34,7 @@ contract LocalScenario is Script {
     uint256 constant PK_DAVE = 0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6;
 
     uint64 constant ARB = 3478487238524512106;
+    uint64 constant BASE = 10344971235874465080;
 
     struct Ctx {
         ReopenCrossHook hook;
@@ -45,6 +47,7 @@ contract LocalScenario is Script {
         SessionPrintOracle oracleArb;
         SessionLedger ledger;
         OrderGateway gateway;
+        ReopenReceiver receiver;
         PoolKey key;
         bool stockIs0;
     }
@@ -98,6 +101,14 @@ contract LocalScenario is Script {
         _withdrawAll(c, PK_BOB);
         _withdrawAll(c, PK_DAVE);
 
+        console2.log("7. the cross-chain fill is sent back to its source chain");
+        address vault = c.receiver.vaultOf(BASE, vm.addr(PK_BOB));
+        uint256 owed = c.hook.credits(vault, address(c.stock));
+        vm.startBroadcast(PK_OWNER);
+        c.receiver.deliver{value: 0.01 ether}(vault, address(c.stock));
+        vm.stopBroadcast();
+        console2.log("   stock delivered to the user on the source chain:", owed);
+
         SessionPrint memory open = c.hook.getPrint(c.key.toId(), 1, KIND_OPEN);
         console2.log("open print price", open.tokenPrice);
         console2.log("open print orders", open.orderCount);
@@ -116,6 +127,7 @@ contract LocalScenario is Script {
         c.oracleArb = SessionPrintOracle(vm.parseJsonAddress(j, ".oracleArb"));
         c.ledger = SessionLedger(vm.parseJsonAddress(j, ".ledger"));
         c.gateway = OrderGateway(vm.parseJsonAddress(j, ".gatewayBase"));
+        c.receiver = ReopenReceiver(vm.parseJsonAddress(j, ".receiver"));
         c.key = PoolKey(
             Currency.wrap(vm.parseJsonAddress(j, ".currency0")),
             Currency.wrap(vm.parseJsonAddress(j, ".currency1")),

@@ -12,7 +12,7 @@ The hook is a Uniswap v4 hook with a dynamic fee, an async queue, a uniform-pric
 
 | What | Where |
 | --- | --- |
-| Contract tests | `forge test` in [contracts](contracts): 98 tests, including fuzzing of cross settlement across four pool orientations |
+| Contract tests | `forge test` in [contracts](contracts): 104 tests, including fuzzing of cross settlement across four pool orientations |
 | CRE workflow logic | `npm test` in [cre/session-attestor](cre/session-attestor): 13 tests |
 | Full workflow through the UI | `npm run test:e2e` in [web](web): queue, cross, print, attest, withdraw on a live local chain |
 | One weekend, on-chain | [LocalScenario.s.sol](contracts/script/LocalScenario.s.sol) sends every step as a real transaction to a local chain |
@@ -116,6 +116,27 @@ flowchart LR
 ```
 
 A print stores the token price and the multiplier, so a split day never shows a fake 50% move. `SessionLedger` books overnight (open minus prior close) and session (close minus open) in token terms for the same reason.
+
+## Uniswap v4 integration
+
+Where to look to verify it. All paths are in [contracts/src](contracts/src).
+
+| Piece | Where |
+| --- | --- |
+| Hook permissions and address bits | [ReopenCrossHook.sol:257](contracts/src/ReopenCrossHook.sol#L257), mined by [HookDeployer.sol](contracts/script/HookDeployer.sol) |
+| `beforeInitialize` (dynamic-fee check) | [ReopenCrossHook.sol:264](contracts/src/ReopenCrossHook.sol#L264) |
+| `beforeSwap`: dark-mode queue via `BeforeSwapDelta`, dynamic fee override | [ReopenCrossHook.sol:276](contracts/src/ReopenCrossHook.sol#L276) |
+| `afterSwap` | [ReopenCrossHook.sol:301](contracts/src/ReopenCrossHook.sol#L301) |
+| Queued orders held as claims | `_queueFromSwap` [:456](contracts/src/ReopenCrossHook.sol#L456), `queueExternal` [:514](contracts/src/ReopenCrossHook.sol#L514) |
+| The cross: `executeCross`, `unlockCallback`, `_settleCross` | [:601](contracts/src/ReopenCrossHook.sol#L601), [:634](contracts/src/ReopenCrossHook.sol#L634), [:673](contracts/src/ReopenCrossHook.sol#L673) |
+| `donate()` of the surplus to LPs | `_donateSurplus` [:814](contracts/src/ReopenCrossHook.sol#L814) |
+| Session Print recorded on every close and open | `_recordPrint` [:873](contracts/src/ReopenCrossHook.sol#L873) |
+
+Developer feedback for the Uniswap team is in [FEEDBACK.md](FEEDBACK.md).
+
+## Cross-chain orders and fill delivery
+
+A buyer on Arbitrum or Base sends USD and an order to Robinhood Chain in one transaction through [OrderGateway](contracts/src/ccip/OrderGateway.sol). [ReopenReceiver](contracts/src/ccip/ReopenReceiver.sol#L119) queues it in the hook. Each cross-chain user owns their orders through a small [FillVault](contracts/src/ccip/FillVault.sol), so the hook's credits stay attributable. After the cross, anyone can call [`deliver`](contracts/src/ccip/ReopenReceiver.sol#L169) to send the fills back to the user's source chain over CCIP. If a token has no lane back, the fill stays as a claim on Robinhood Chain rather than getting stuck. The user can also take fills in place with `withdrawHere` or cancel an open order with `cancelFor`.
 
 ## Chainlink integration
 
@@ -223,3 +244,7 @@ Two things differ from the PRD sketch. v4's `initialize` takes no hook data, so 
 ## Credits
 
 The decaying-fee gap auction follows the design of Uniswap's StablePair hook. Corvex builds on Uniswap v4, OpenZeppelin Uniswap Hooks, and Chainlink CCIP 2.0 and CRE. Reserve figures on the landing page are quoted from The Standard Reserve and are self-reported.
+
+## License
+
+[MIT](LICENSE)

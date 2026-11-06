@@ -71,6 +71,7 @@ contract MockCCIPRouter is IRouterClient {
             data: m.data,
             destTokenAmounts: delivered
         });
+        if (receiver.code.length == 0) return id; // a plain wallet just receives the tokens
         try IAny2EVMMessageReceiver(receiver).ccipReceive(a) {}
         catch (bytes memory reason) {
             failures.push(Failed(id, reason));

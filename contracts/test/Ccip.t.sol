@@ -348,21 +348,122 @@ contract CcipTest is CorvexBase {
         _closeMarket();
         _placeOrder(gatewayBase, alice, bob, _q(8000), 220e18);
 
+        address vault = rcv.vaultOf(BASE, bob);
+        assertTrue(vault != address(0), "the user got a vault");
+        (uint64 sel, address user) = rcv.routes(vault);
+        assertEq(sel, BASE);
+        assertEq(user, bob);
+
         ReopenCrossHook.Order[] memory o = hook.getOrders(pid, 1);
         assertEq(o.length, 1);
-        assertEq(o[0].owner, bob, "recipient owns the order on Robinhood Chain");
+        assertEq(o[0].owner, vault, "the vault owns the order on Robinhood Chain");
         assertEq(o[0].srcSelector, BASE);
         assertEq(o[0].amountIn, _q(8000));
         assertEq(hook.liabilities(address(usdg)), _q(8000));
 
         _openMarketAt(T0 + 3 days, 212e8);
         hook.executeCross(key);
-        assertGt(_credit(bob, true), 0, "fill held as a claim for the recipient");
+        assertGt(_credit(vault, true), 0, "fill held as a claim for the vault");
 
         uint256 before = _balance(address(stock), bob);
         vm.prank(bob);
-        hook.withdraw(Currency.wrap(address(stock)), bob);
+        rcv.withdrawHere(vault, address(stock), bob);
         assertGt(_balance(address(stock), bob), before);
+    }
+
+    function _crossedBaseOrder() internal returns (address vault) {
+        _closeMarket();
+        _placeOrder(gatewayBase, alice, bob, _q(8000), 220e18);
+        vault = rcv.vaultOf(BASE, bob);
+        _openMarketAt(T0 + 3 days, 212e8);
+        hook.executeCross(key);
+    }
+
+    function test_fillIsDeliveredBackToTheSourceChain() public {
+        address vault = _crossedBaseOrder();
+        uint256 owed = hook.credits(vault, address(stock));
+        assertGt(owed, 0);
+
+        uint256 before = _balance(address(stock), bob);
+        uint256 fee = router.feePerMessage();
+        address anyone = makeAddr("anyone");
+        vm.deal(anyone, 1 ether);
+        vm.prank(anyone);
+        bytes32 id = rcv.deliver{value: fee + 0.5 ether}(vault, address(stock));
+
+        assertTrue(id != bytes32(0));
+        assertEq(_balance(address(stock), bob) - before, owed, "tokens left Robinhood Chain for the user");
+        assertEq(hook.credits(vault, address(stock)), 0);
+        assertEq(rcv.refunds(bob, address(stock)), 0);
+        assertEq(anyone.balance, 1 ether - fee, "excess fee returned to the caller");
+    }
+
+    function test_fillStaysHereWhenThereIsNoLaneBack() public {
+        address vault = _crossedBaseOrder();
+        uint256 owed = hook.credits(vault, address(stock));
+        router.setSupported(BASE, false);
+
+        rcv.deliver(vault, address(stock));
+        assertEq(rcv.refunds(bob, address(stock)), owed, "kept as a claim, not lost");
+        assertEq(hook.credits(vault, address(stock)), 0);
+
+        uint256 before = _balance(address(stock), bob);
+        vm.prank(bob);
+        rcv.claimRefund(address(stock), bob);
+        assertEq(_balance(address(stock), bob) - before, owed);
+    }
+
+    function test_deliverNeedsTheFeeAndSomethingToSend() public {
+        address vault = _crossedBaseOrder();
+        uint256 fee = router.feePerMessage();
+        vm.expectRevert(abi.encodeWithSelector(ReopenReceiver.FeeTooLow.selector, fee - 1, fee));
+        rcv.deliver{value: fee - 1}(vault, address(stock));
+        assertGt(hook.credits(vault, address(stock)), 0, "a failed delivery leaves the credit alone");
+
+        rcv.deliver{value: fee}(vault, address(stock));
+        vm.expectRevert(ReopenReceiver.NothingToClaim.selector);
+        rcv.deliver{value: fee}(vault, address(stock));
+
+        vm.expectRevert(ReopenReceiver.UnknownVault.selector);
+        rcv.deliver(makeAddr("nobody"), address(stock));
+    }
+
+    function test_onlyTheUserCanWithdrawTheirVaultHere() public {
+        address vault = _crossedBaseOrder();
+        vm.expectRevert(ReopenReceiver.NotVaultUser.selector);
+        rcv.withdrawHere(vault, address(stock), alice);
+        vm.prank(alice);
+        vm.expectRevert(ReopenReceiver.NotVaultUser.selector);
+        rcv.withdrawHere(vault, address(stock), alice);
+    }
+
+    function test_crossChainOrderCanBeCancelledByItsUser() public {
+        _closeMarket();
+        _placeOrder(gatewayBase, alice, bob, _q(500), 0);
+        address vault = rcv.vaultOf(BASE, bob);
+
+        vm.expectRevert(ReopenReceiver.NotVaultUser.selector);
+        rcv.cancelFor(vault, PoolId.unwrap(pid), 1, 0);
+
+        vm.prank(bob);
+        rcv.cancelFor(vault, PoolId.unwrap(pid), 1, 0);
+        assertEq(hook.credits(vault, address(usdg)), _q(500));
+
+        uint256 before = _balance(address(usdg), bob);
+        vm.prank(bob);
+        rcv.withdrawHere(vault, address(usdg), bob);
+        assertEq(_balance(address(usdg), bob) - before, _q(500));
+    }
+
+    function test_oneVaultPerUserAndChain() public {
+        _closeMarket();
+        _placeOrder(gatewayBase, alice, bob, _q(100), 0);
+        _placeOrder(gatewayBase, alice, bob, _q(100), 0);
+        _placeOrder(gatewayArb, alice, bob, _q(100), 0);
+        assertEq(rcv.vaultOf(BASE, bob) == rcv.vaultOf(ARB, bob), false);
+        ReopenCrossHook.Order[] memory o = hook.getOrders(pid, 1);
+        assertEq(o[0].owner, o[1].owner);
+        assertTrue(o[1].owner != o[2].owner);
     }
 
     function test_orderRefundableWhenPoolNotDark() public {
