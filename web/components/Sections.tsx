@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { ClayLazy } from "./ClayLazy";
+import { Magnetic } from "./Motion";
+
 import { LogoMark } from "./Logo";
 
 export function Cta() {
@@ -6,15 +9,22 @@ export function Cta() {
     <section className="relative isolate overflow-hidden bg-night text-snow">
       <div aria-hidden="true" className="columns pointer-events-none absolute inset-y-0 left-1/2 -z-10 w-[min(1200px,100%)] -translate-x-1/2" />
       <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[420px] w-[720px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-lime/10 blur-[120px]" />
+      <div className="pointer-events-none absolute inset-0 -z-10 hidden md:block" aria-hidden="true">
+        <ClayLazy preset="ring" />
+      </div>
       <div className="mx-auto flex max-w-[1200px] flex-col items-center px-6 py-32 text-center">
         <p className="tag rounded-md border border-white/20 px-3 py-1.5 text-lime">Open source</p>
         <h2 className="mt-8 max-w-[16ch] font-display text-5xl leading-[1.02] md:text-7xl">Every open gets a price other chains can settle on.</h2>
         <p className="mt-6 max-w-[52ch] text-lg text-snow/70">
           Each cross records a Session Print. Chainlink CRE checks it against the official open, and CCIP carries it to Arbitrum and Base.
         </p>
-        <Link href="/app" className="tag lift mt-10 rounded-md bg-lime px-8 py-4 text-night hover:bg-[#d8ff86]">
-          Launch app
-        </Link>
+        <div className="mt-10">
+          <Magnetic strength={0.4}>
+            <Link href="/app" className="tag lift block rounded-md bg-lime px-8 py-4 text-night hover:bg-[#d8ff86]">
+              Launch app
+            </Link>
+          </Magnetic>
+        </div>
       </div>
     </section>
   );

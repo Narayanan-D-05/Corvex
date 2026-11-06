@@ -11,10 +11,13 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@react-three/fiber": "^9.8.2",
+    "@types/three": "^0.187.0",
     "lucide-react": "^1.69.0",
     "next": "16.4.5",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "three": "^0.187.0",
     "viem": "^2.57.16"
   },
   "devDependencies": {
