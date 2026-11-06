@@ -156,11 +156,16 @@ To run the same weekend as a script: `cd contracts && forge script script/LocalS
 
 ```bash
 cd cre/session-attestor && npm install && npm test
-node ../mock-api/server.mjs          # mock official prices and calendar
-cre workflow simulate session-attestor --target staging-settings
+node ../mock-api/server.mjs          # mock official prices and calendar (POOL_ID=0x... sets the calendar pool)
+export MARKET_DATA_API_KEY_VAR=mock-key
+cd .. && cre workflow simulate session-attestor --target staging-settings --non-interactive --trigger-index 1
+# attest a real print: its Arbitrum delivery transaction triggers the log handler
+cre workflow simulate session-attestor --target staging-settings --non-interactive --broadcast   --trigger-index 0 --evm-tx-hash <tx> --evm-event-index 0
 ```
 
-Fill `oracleAddress`, `controllerAddress` and `symbols` in [config.staging.json](cre/session-attestor/config.staging.json) from your deployment first. `cre` needs `cre login`.
+Fill `oracleAddress`, `controllerAddress` and `symbols` (lowercase token address) in [config.staging.json](cre/session-attestor/config.staging.json) from your deployment first. `cre` needs `cre login`; `--broadcast` signs with `CRE_ETH_PRIVATE_KEY`. Deploying the workflow to the CRE network additionally needs deploy access (`cre account access`), a public price API, and the real forwarder addresses from `cre workflow supported-chains`.
+
+CRE lists `robinhood-testnet` as a supported chain, so a production build could write schedules straight to the hook and drop the Arbitrum controller hop. This repo keeps the PRD's design.
 
 ### Testnets
 
@@ -194,7 +199,7 @@ Deployed and exercised on 6 Nov 2026. The pool uses mock TSLA and USDG tokens, a
 | Base Sepolia | SessionPrintOracle | [0x62Ab4b063018CEdD2433E8197af83700E4fC22ce](https://sepolia.basescan.org/address/0x62Ab4b063018CEdD2433E8197af83700E4fC22ce) |
 | | OrderGateway | [0xa016acba6F6368c095511bA8Bb111ae77F2Eb660](https://sepolia.basescan.org/address/0xa016acba6F6368c095511bA8Bb111ae77F2Eb660) |
 
-`script/TestnetScenario.s.sol` plays a weekend on this deployment with one key: `STAGE=close` goes dark and queues an order, `STAGE=open` reopens at 212 and runs the cross, which sends both prints over CCIP. A whole weekend costs under 0.001 ETH. Cross-chain orders that carry tokens are only exercised locally, since the mock USDG has no CCIP token pool.
+`script/TestnetScenario.s.sol` plays a weekend on this deployment with one key: `STAGE=close` goes dark and queues an order, `STAGE=open` reopens at 212 and runs the cross, which sends both prints over CCIP. A whole weekend costs under 0.001 ETH. The two prints it sent were delivered to Arbitrum and Base over CCIP, and the CRE workflow attested both on Arbitrum Sepolia (close 200.00, open 212.00 against an official 212.30, -14 bps); the ledger booked +12 overnight. Cross-chain orders that carry tokens are only exercised locally, since the mock USDG has no CCIP token pool.
 
 Two things differ from the PRD sketch. v4's `initialize` takes no hook data, so the owner calls `configure()` before `initialize`. Market status is written by a keeper; the production path is a Data Streams adapter.
 

@@ -79,7 +79,8 @@ function writeReport(runtime: Runtime<Config>, receiver: Hex, payload: Hex): str
     .writeReport(runtime, { receiver, report, gasConfig: { gasLimit: runtime.config.gasLimit } })
     .result()
   if (res.txStatus !== TxStatus.SUCCESS) throw new Error(res.errorMessage ?? `write status ${res.txStatus}`)
-  if (!res.txHash) throw new Error('write succeeded without a transaction hash')
+  // A simulation without --broadcast is a dry run: the write succeeds but no transaction is sent, so no hash.
+  if (!res.txHash) return 'dry-run'
   return bytesToHex(res.txHash)
 }
 

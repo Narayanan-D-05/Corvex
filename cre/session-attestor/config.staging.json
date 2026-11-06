@@ -8,7 +8,7 @@
   "provider": "mock",
   "officialPriceApi": "http://localhost:8787/official",
   "symbols": {
-    "0x535Ce55d2802224E906D76F904FB3217EC4E9B98": "TSLA"
+    "0x535ce55d2802224e906d76f904fb3217ec4e9b98": "TSLA"
   },
   "calendarApi": "http://localhost:8787/calendar",
   "gasLimit": "500000"
