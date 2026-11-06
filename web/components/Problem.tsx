@@ -64,7 +64,7 @@ export function Problem() {
     <section className="bg-paper text-ink">
       <div className="mx-auto max-w-[1200px] px-6 py-28">
         <p className="tag text-mint">[ The problem ]</p>
-        <h2 className="mt-5 max-w-[18ch] font-display text-5xl leading-[1.02] md:text-7xl">The market opens. The first bot to arrive takes the gap.</h2>
+        <h2 className="mt-5 max-w-[18ch] font-display text-5xl leading-[1.02] md:text-7xl">The market opens. <span className="text-mint">The first bot to arrive takes the gap.</span></h2>
         <p className="mt-6 max-w-[56ch] text-lg text-slate">
           Stock tokens trade all weekend against Friday&apos;s price. Monday&apos;s news lands in one jump, and liquidity providers pay for it.
         </p>

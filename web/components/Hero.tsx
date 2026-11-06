@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CrossConsole } from "./CrossConsole";
+import { Tilt } from "./Tilt";
 
 export function Hero() {
   return (
@@ -10,7 +11,7 @@ export function Hero() {
         <div>
           <p className="tag text-lime">[ Uniswap v4 hook for stock tokens ]</p>
           <h1 className="mt-6 font-display text-[clamp(2.8rem,5.4vw,5rem)] leading-[1]">
-            Monday&apos;s open, <span className="text-lime">cleared once.</span>
+            One fair price for <span className="text-lime">every open.</span>
           </h1>
           <p className="mt-7 max-w-[44ch] text-lg text-snow/75">
             While a stock&apos;s price is dark, large orders wait in a queue. When it returns, the whole queue clears at one fair price and the surplus goes to LPs.
@@ -24,7 +25,9 @@ export function Hero() {
             </Link>
           </div>
         </div>
-        <CrossConsole />
+        <Tilt>
+          <CrossConsole />
+        </Tilt>
       </div>
     </section>
   );

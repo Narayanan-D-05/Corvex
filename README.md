@@ -2,7 +2,7 @@
 
 # Corvex
 
-**Monday's open, cleared once. Uniswap v4 Hooks.**
+**One fair price for every open. Uniswap v4 Hooks.**
 
 Corvex is a Uniswap v4 hook for tokenized-stock pools. While a stock's reference price is dark (weekend, split pause, halt) it queues large trades. When the reference comes back it clears the whole queue in one uniform-price cross, donates the surplus to LPs, and records a split-safe **Session Print**. A Chainlink CRE workflow checks each print against the official exchange open or close, and CCIP carries it to other chains.
 

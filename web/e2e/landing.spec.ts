@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("landing: hero, navbar behaviour, sections", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Monday's open, cleared once.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("One fair price for every open.");
 
   const nav = page.getByRole("navigation", { name: "Main" });
   // the bar stays on screen the whole way down

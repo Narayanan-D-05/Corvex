@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Corvex: Monday's open, cleared once";
+export const alt = "Corvex: One fair price for every open";
 
 export default function Image() {
   return new ImageResponse(
@@ -15,7 +15,7 @@ export default function Image() {
           <circle cx="40" cy="32" r="5.5" fill="#2650ff" stroke="none" />
         </svg>
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 104, lineHeight: 1.05, fontFamily: "serif" }}>Monday&apos;s open, cleared once.</div>
+          <div style={{ fontSize: 104, lineHeight: 1.05, fontFamily: "serif" }}>One fair price for every open.</div>
           <div style={{ fontSize: 36, marginTop: 24, color: "#9fb0cc" }}>Uniswap v4 Hooks for tokenized stocks. Corvex.</div>
         </div>
       </div>

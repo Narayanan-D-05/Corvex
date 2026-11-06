@@ -27,7 +27,7 @@ const phase = (u: number): Phase =>
 /** The product itself, live: orders wait while the market is closed, then clear at one price. Loops on its own. */
 export function CrossConsole() {
   const [paused, setPaused] = useState(false);
-  const { u, still } = useCycle(20, paused);
+  const { u, still } = useCycle(20, paused, 0.24);
   const ph = phase(u);
   const closed = u >= 0.08;
   const reopened = u >= 0.5;
@@ -74,7 +74,7 @@ export function CrossConsole() {
           </thead>
           <tbody>
             {rows.map((r, i) => {
-              const shown = closed && u >= 0.12 + i * 0.05;
+              const shown = closed && u >= 0.09 + i * 0.025;
               const status = !crossed ? "In queue" : !settled ? "Matching" : r.fills ? "Settled" : "Refunded";
               const chip = !crossed ? "bg-[#e5b552]/15 text-[#e5b552]" : !settled ? "bg-[#6fa8ff]/15 text-[#9cc2ff]" : r.fills ? "bg-lime/15 text-lime" : "bg-white/10 text-snow/70";
               return (

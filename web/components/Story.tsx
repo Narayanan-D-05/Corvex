@@ -22,7 +22,7 @@ export function Story() {
       <div className="mx-auto grid max-w-[1200px] gap-14 px-6 py-28 lg:grid-cols-[0.9fr_1.1fr]">
         <div>
           <p className="tag text-lime">[ How it works ]</p>
-          <h2 className="mt-5 font-display text-5xl leading-[1.02] md:text-6xl">How a cross works</h2>
+          <h2 className="mt-5 font-display text-5xl leading-[1.02] md:text-6xl">How a cross <span className="text-lime">works</span></h2>
           <p className="mt-6 max-w-[40ch] text-snow/70">Four steps, from the close on Friday to the first trade after the open.</p>
         </div>
         <ol className="space-y-1">
