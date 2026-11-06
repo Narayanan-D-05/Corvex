@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { maxUint256, parseUnits, type Address } from "viem";
-import { gatewayAbi, hookAbi, swapRouterAbi, tokenAbi } from "@/lib/abis";
-import { fmtPrice, fmtUnits, poolKey, publicClient, short } from "@/lib/chain";
+import { gatewayAbi, hookAbi, receiverAbi, swapRouterAbi, tokenAbi } from "@/lib/abis";
+import { fmtPrice, fmtUnits, poolKey, publicClient, SELECTORS, short } from "@/lib/chain";
 import type { State } from "@/lib/useCorvex";
 import type { useWallet } from "@/lib/useWallet";
 
@@ -88,11 +88,19 @@ export function Orders({ c, w, onChange }: { c: State; w: Wallet; onChange: () =
     }
   }
 
-  async function act(fn: "cancel" | "withdraw", args: readonly unknown[]) {
+  async function act(fn: "cancel" | "withdraw" | "cancelFor" | "withdrawHere" | "deliver", args: readonly unknown[], value?: bigint) {
     setMsg(null);
     try {
-      await w.write({ address: d.hook, abi: hookAbi, functionName: fn, args });
-      setMsg({ ok: true, text: fn === "cancel" ? "Order cancelled. Withdraw to get the funds back." : "Withdrawn." });
+      const viaReceiver = fn === "cancelFor" || fn === "withdrawHere" || fn === "deliver";
+      await w.write({ address: viaReceiver ? d.receiver : d.hook, abi: (viaReceiver ? receiverAbi : hookAbi) as never, functionName: fn, args, value });
+      const text = {
+        cancel: "Order cancelled. Withdraw to get the funds back.",
+        cancelFor: "Order cancelled. Your refund is waiting under cross-chain fills.",
+        withdraw: "Withdrawn.",
+        withdrawHere: "Withdrawn.",
+        deliver: "Sent back over CCIP. It arrives on the source chain in a few minutes.",
+      }[fn];
+      setMsg({ ok: true, text });
       onChange();
     } catch (e) {
       setMsg({ ok: false, text: e instanceof Error ? e.message.split("\n")[0] : "Failed" });
@@ -153,10 +161,13 @@ export function Orders({ c, w, onChange }: { c: State; w: Wallet; onChange: () =
                       <td className="py-2">{o.buy ? "Buy" : "Sell"}{o.srcSelector !== 0n && <span className="ml-2 rounded bg-paper-2 px-1.5 text-xs">CCIP</span>}</td>
                       <td className="num">{o.buy ? `${fmtUnits(o.amountIn, c.decimals.quote)} USDG` : `${fmtUnits(o.amountIn, c.decimals.stock)} TSLA`}</td>
                       <td className="num">{o.limitPrice === maxUint256 || o.limitPrice === 0n ? "none" : `$${fmtPrice(o.limitPrice)}`}</td>
-                      <td className="num">{short(o.owner)}</td>
+                      <td className="num">{short(c.vaultUsers[o.owner.toLowerCase()] ?? o.owner)}</td>
                       <td>{STATUS[o.status]}</td>
                       <td className="text-right">
-                        {o.status === 0 && (s.mode === 1 || s.mode === 2) && (w.account?.toLowerCase() === o.owner.toLowerCase() || s.expired) && (
+                        {o.status === 0 && (s.mode === 1 || s.mode === 2) && c.vaultUsers[o.owner.toLowerCase()] && w.account?.toLowerCase() === c.vaultUsers[o.owner.toLowerCase()].toLowerCase() && (
+                          <button onClick={() => act("cancelFor", [o.owner, d.poolId, s.sessionId, BigInt(i)])} className="text-cobalt underline-offset-4 hover:underline">Cancel</button>
+                        )}
+                        {o.status === 0 && (s.mode === 1 || s.mode === 2) && !c.vaultUsers[o.owner.toLowerCase()] && (w.account?.toLowerCase() === o.owner.toLowerCase() || s.expired) && (
                           <button onClick={() => act("cancel", [poolKey(d), s.sessionId, BigInt(i)])} className="text-cobalt underline-offset-4 hover:underline">Cancel</button>
                         )}
                       </td>
@@ -169,12 +180,15 @@ export function Orders({ c, w, onChange }: { c: State; w: Wallet; onChange: () =
           {c.crosses[0] && s.mode >= 2 && <p className="mt-3 text-sm text-slate">Last cross cleared at <span className="num">${fmtPrice(c.crosses[0].price)}</span>.</p>}
         </section>
         <Claims c={c} w={w} act={act} />
+        <CrossChainFills c={c} w={w} act={act} />
       </div>
     </div>
   );
 }
 
-function Claims({ c, w, act }: { c: State; w: Wallet; act: (fn: "withdraw", args: readonly unknown[]) => Promise<void> }) {
+type Act = (fn: "withdraw" | "withdrawHere" | "deliver", args: readonly unknown[], value?: bigint) => Promise<void>;
+
+function Claims({ c, w, act }: { c: State; w: Wallet; act: Act }) {
   const d = c.deployment!;
   const [claims, setClaims] = useState<{ stock: bigint; quote: bigint } | null>(null);
   useEffect(() => {
@@ -210,6 +224,57 @@ function Claims({ c, w, act }: { c: State; w: Wallet; act: (fn: "withdraw", args
           )}
         </ul>
       )}
+    </section>
+  );
+}
+
+/** Fills of orders that came in over CCIP are held by the user's vault until sent back or taken here. */
+function CrossChainFills({ c, w, act }: { c: State; w: Wallet; act: Act }) {
+  const d = c.deployment!;
+  const [rows, setRows] = useState<{ vault: Address; chain: string; stock: bigint; quote: bigint }[]>([]);
+  useEffect(() => {
+    if (!w.account) return;
+    let live = true;
+    (async () => {
+      const out: { vault: Address; chain: string; stock: bigint; quote: bigint }[] = [];
+      for (const [name, sel] of [["Base Sepolia", SELECTORS.base], ["Arbitrum Sepolia", SELECTORS.arb]] as const) {
+        const vault = (await publicClient.readContract({ address: d.receiver, abi: receiverAbi, functionName: "vaultOf", args: [sel, w.account!] })) as Address;
+        if (vault === "0x0000000000000000000000000000000000000000") continue;
+        const [stock, quote] = (await Promise.all([
+          publicClient.readContract({ address: d.hook, abi: hookAbi, functionName: "credits", args: [vault, d.stockToken] }),
+          publicClient.readContract({ address: d.hook, abi: hookAbi, functionName: "credits", args: [vault, d.quoteToken] }),
+        ])) as [bigint, bigint];
+        out.push({ vault, chain: name, stock, quote });
+      }
+      if (live) setRows(out);
+    })().catch(() => live && setRows([]));
+    return () => {
+      live = false;
+    };
+  }, [w.account, c.updatedAt, d.receiver, d.hook, d.stockToken, d.quoteToken]);
+
+  const owed = rows.filter((r) => r.stock > 0n || r.quote > 0n);
+  if (!w.account || owed.length === 0) return null;
+  const FEE_BUFFER = 2_000_000_000_000_000n; // 0.002 ETH; whatever the CCIP fee does not use comes straight back
+  return (
+    <section>
+      <h2 className="text-lg font-semibold">Cross-chain fills</h2>
+      <p className="mt-1 text-sm text-slate">These came from orders placed on another chain. Send them back there, or take them here.</p>
+      <ul className="mt-3 space-y-2">
+        {owed.flatMap((r) =>
+          ([["TSLA", d.stockToken, r.stock, c.decimals.stock, 4], ["USDG", d.quoteToken, r.quote, c.decimals.quote, 2]] as const)
+            .filter(([, , amt]) => amt > 0n)
+            .map(([sym, token, amt, dec, digits]) => (
+              <li key={r.vault + sym} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line px-4 py-3">
+                <span><span className="num">{fmtUnits(amt, dec, digits)} {sym}</span> <span className="text-sm text-slate">from {r.chain}</span></span>
+                <span className="flex gap-2">
+                  <button onClick={() => act("deliver", [r.vault, token], FEE_BUFFER)} className="rounded-lg bg-ink px-3 py-1.5 text-sm text-paper">Send back</button>
+                  <button onClick={() => act("withdrawHere", [r.vault, token, w.account])} className="rounded-lg border border-ink px-3 py-1.5 text-sm">Take here</button>
+                </span>
+              </li>
+            )),
+        )}
+      </ul>
     </section>
   );
 }

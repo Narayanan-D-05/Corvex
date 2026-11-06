@@ -18,6 +18,8 @@ export type Deployment = {
   poolId: Hex;
   currency0: Address;
   currency1: Address;
+  /** first block of the deployment, so event queries do not start at genesis */
+  fromBlock?: number;
   // present on the local deployment, where one chain plays every chain
   oracleArb?: Address;
   oracleBase?: Address;
@@ -26,15 +28,33 @@ export type Deployment = {
   controller?: Address;
 };
 
-export async function loadDeployment(): Promise<Deployment | null> {
+export const isLocal = DEPLOYMENT === "local";
+export const EXPLORER = isLocal ? null : "https://explorer.testnet.chain.robinhood.com";
+
+/** CCIP selectors of the source chains orders can come from. */
+export const SELECTORS = { arb: 3478487238524512106n, base: 10344971235874465080n } as const;
+
+async function getJson<T>(name: string): Promise<T | null> {
   try {
-    const res = await fetch(`/deployments/${DEPLOYMENT}.json`, { cache: "no-store" });
-    if (!res.ok) return null;
-    return (await res.json()) as Deployment;
+    const res = await fetch(`/deployments/${name}.json`, { cache: "no-store" });
+    return res.ok ? ((await res.json()) as T) : null;
   } catch {
     return null;
   }
 }
+
+export async function loadDeployment(): Promise<Deployment | null> {
+  const d = await getJson<Deployment>(DEPLOYMENT);
+  if (!d || isLocal) return d;
+  // on testnet the oracles, gateways and ledger live on other chains, in their own files
+  const arb = await getJson<{ oracle: Address; gateway: Address; ledger: Address; controller: Address }>("arb-sepolia");
+  const base = await getJson<{ oracle: Address; gateway: Address }>("base-sepolia");
+  return { ...d, oracleArb: arb?.oracle, ledger: arb?.ledger, controller: arb?.controller, oracleBase: base?.oracle };
+}
+
+/** Read-only clients for the chains the oracles live on, used on testnet. */
+export const arbClient = createPublicClient({ transport: http("https://sepolia-rollup.arbitrum.io/rpc", { batch: true }) });
+export const baseClient = createPublicClient({ transport: http("https://base-sepolia-rpc.publicnode.com", { batch: true }) });
 
 export const chain = defineChain({
   id: DEPLOYMENT === "local" ? 31337 : 46630,
@@ -43,9 +63,10 @@ export const chain = defineChain({
   rpcUrls: { default: { http: [RPC_URL] } },
 });
 
-export const publicClient = createPublicClient({ chain, transport: http(RPC_URL) });
+export const publicClient = createPublicClient({ chain, transport: http(RPC_URL, { batch: true }) });
 
-export const isLocal = DEPLOYMENT === "local";
+export const txUrl = (hash: string) => (EXPLORER ? `${EXPLORER}/tx/${hash}` : null);
+export const addressUrl = (a: string) => (EXPLORER ? `${EXPLORER}/address/${a}` : null);
 
 export function poolKey(d: Deployment) {
   return {

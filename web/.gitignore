@@ -46,5 +46,9 @@ CLAUDE.md
 /test-results/
 /playwright-report/
 /public/deployments/*.json
+# the testnet deployments are public addresses and ship with the app
+!/public/deployments/robinhood-testnet.json
+!/public/deployments/arb-sepolia.json
+!/public/deployments/base-sepolia.json
 *.tmp.mjs
 tsconfig.tsbuildinfo

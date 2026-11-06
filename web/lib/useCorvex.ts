@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Address } from "viem";
-import { hookAbi, lensAbi, oracleAbi, tokenAbi } from "./abis";
-import { loadDeployment, poolKey, publicClient, type Deployment } from "./chain";
+import { hookAbi, lensAbi, oracleAbi, receiverAbi, tokenAbi } from "./abis";
+import { arbClient, baseClient, isLocal, loadDeployment, poolKey, publicClient, type Deployment } from "./chain";
 
 export type Snapshot = {
   mode: number;
@@ -59,6 +59,8 @@ export type State = {
   deployment: Deployment | null;
   snap: Snapshot | null;
   orders: Order[];
+  /** cross-chain orders are owned by a vault; this maps each vault to the user it belongs to */
+  vaultUsers: Record<string, Address>;
   prints: Print[];
   crosses: CrossLog[];
   decimals: { stock: number; quote: number };
@@ -72,6 +74,7 @@ const empty: State = {
   deployment: null,
   snap: null,
   orders: [],
+  vaultUsers: {},
   prints: [],
   crosses: [],
   decimals: { stock: 18, quote: 6 },
@@ -105,20 +108,43 @@ export function useCorvex(intervalMs = 3000) {
         args: [d.poolId, snap.sessionId],
       })) as unknown as Order[];
 
-      const prints: Print[] = [];
-      const first = snap.sessionId > 2n ? snap.sessionId - 2n : 0n;
-      for (let s = snap.sessionId; s >= first; s--) {
-        for (const kind of [1, 0]) {
-          const p = (await publicClient.readContract({ address: d.hook, abi: hookAbi, functionName: "getPrint", args: [d.poolId, s, kind] })) as unknown as Omit<Print, "arb" | "base">;
-          if (p.timestamp === 0n) continue;
-          const status = async (o?: Address) =>
-            o ? Number(await publicClient.readContract({ address: o, abi: oracleAbi, functionName: "statusOf", args: [d.stockToken, s, kind] })) : 0;
-          prints.push({ ...p, arb: await status(d.oracleArb), base: await status(d.oracleBase) });
+      const vaultUsers: Record<string, Address> = {};
+      const ccipOwners = [...new Set(orders.filter((o) => o.srcSelector !== 0n).map((o) => o.owner))];
+      await Promise.all(
+        ccipOwners.map(async (owner) => {
+          const r = (await publicClient.readContract({ address: d.receiver, abi: receiverAbi, functionName: "routes", args: [owner] })) as readonly [bigint, Address];
+          if (r[1] !== "0x0000000000000000000000000000000000000000") vaultUsers[owner.toLowerCase()] = r[1];
+        }),
+      );
+
+      const status = async (o: Address | undefined, client: { readContract: typeof publicClient.readContract }, s: bigint, kind: number) => {
+        if (!o) return 0;
+        try {
+          return Number(await client.readContract({ address: o, abi: oracleAbi, functionName: "statusOf", args: [d.stockToken, s, kind] }));
+        } catch {
+          return 0; // that chain's RPC is unreachable right now
         }
+      };
+      const first = snap.sessionId > 2n ? snap.sessionId - 2n : 0n;
+      const pairs: [bigint, number][] = [];
+      for (let s = snap.sessionId; s >= first; s--) {
+        for (const kind of [1, 0]) pairs.push([s, kind]);
         if (s === 0n) break;
       }
+      const found = await Promise.all(
+        pairs.map(async ([s, kind]) => {
+          const p = (await publicClient.readContract({ address: d.hook, abi: hookAbi, functionName: "getPrint", args: [d.poolId, s, kind] })) as unknown as Omit<Print, "arb" | "base">;
+          if (p.timestamp === 0n) return null;
+          const [arb, base] = await Promise.all([
+            status(d.oracleArb, isLocal ? publicClient : arbClient, s, kind),
+            status(d.oracleBase, isLocal ? publicClient : baseClient, s, kind),
+          ]);
+          return { ...p, arb, base } as Print;
+        }),
+      );
+      const prints = found.filter((p): p is Print => p !== null);
 
-      const logs = await publicClient.getContractEvents({ address: d.hook, abi: hookAbi, eventName: "CrossExecuted", fromBlock: 0n });
+      const logs = await publicClient.getContractEvents({ address: d.hook, abi: hookAbi, eventName: "CrossExecuted", fromBlock: BigInt(d.fromBlock ?? 0) });
       const crosses = logs
         .map((l) => {
           const a = (l as unknown as { args: { price: bigint; volume: bigint; orders: number; donated0: bigint; donated1: bigint; sessionId: bigint } }).args;
@@ -132,6 +158,7 @@ export function useCorvex(intervalMs = 3000) {
         deployment: d,
         snap,
         orders,
+        vaultUsers,
         prints,
         crosses,
         decimals: { stock: Number(stockDec), quote: Number(quoteDec) },

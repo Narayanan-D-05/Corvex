@@ -2,13 +2,27 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createWalletClient, custom, http, type Address, type Abi } from "viem";
-import { chain, isLocal, publicClient, RPC_URL } from "./chain";
+import { chain, EXPLORER, isLocal, publicClient, RPC_URL } from "./chain";
 
 type Eth = { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> };
 
 declare global {
   interface Window {
     ethereum?: Eth;
+  }
+}
+
+/** Moves an injected wallet onto the app's chain, adding it first if the wallet has never seen it. */
+async function ensureChain(eth: Eth) {
+  const chainId = `0x${chain.id.toString(16)}`;
+  try {
+    await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId }] });
+  } catch (e) {
+    if ((e as { code?: number }).code !== 4902) throw e;
+    await eth.request({
+      method: "wallet_addEthereumChain",
+      params: [{ chainId, chainName: chain.name, nativeCurrency: chain.nativeCurrency, rpcUrls: [RPC_URL], blockExplorerUrls: EXPLORER ? [EXPLORER] : [] }],
+    });
   }
 }
 
@@ -28,6 +42,7 @@ export function useWallet() {
   const connect = useCallback(async () => {
     if (!window.ethereum) throw new Error("No wallet found. Install a browser wallet or use a demo account.");
     const accounts = (await window.ethereum.request({ method: "eth_requestAccounts" })) as Address[];
+    if (!isLocal) await ensureChain(window.ethereum);
     setAccount(accounts[0]);
     setMode("injected");
     sessionStorage.removeItem("corvex.demo");

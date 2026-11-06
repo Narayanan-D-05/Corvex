@@ -8,6 +8,7 @@ import { Orders } from "@/components/console/Orders";
 import { Prints } from "@/components/console/Prints";
 import { Liquidity } from "@/components/console/Liquidity";
 import { DemoControls } from "@/components/console/DemoControls";
+import { LivePanel } from "@/components/console/LivePanel";
 import { DEMO_ACCOUNTS, chain, isLocal, short } from "@/lib/chain";
 import { useCorvex } from "@/lib/useCorvex";
 import { useWallet } from "@/lib/useWallet";
@@ -86,7 +87,7 @@ export default function Console() {
             {tab === "overview" && (
               <div className="space-y-8">
                 <Overview c={c} />
-                {isLocal && <DemoControls c={c} w={w} onChange={c.refresh} />}
+                {isLocal ? <DemoControls c={c} w={w} onChange={c.refresh} /> : <LivePanel c={c} w={w} onChange={c.refresh} />}
               </div>
             )}
             {tab === "orders" && <Orders c={c} w={w} onChange={c.refresh} />}
