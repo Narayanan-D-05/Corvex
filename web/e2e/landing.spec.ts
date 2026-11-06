@@ -36,9 +36,9 @@ test("landing: no horizontal scroll on a phone", async ({ browser }) => {
 test("replay: scrubber drives the stage and reveals the result", async ({ page }) => {
   await page.goto("/replay");
   await expect(page.getByRole("heading", { name: "Replay" })).toBeVisible();
-  await expect(page.getByText("Move the slider to Settled")).toBeVisible();
-  await page.getByRole("slider", { name: "Replay position" }).fill("4");
-  await expect(page.getByText("Move the slider to Settled")).toHaveCount(0);
+  await expect(page.getByText("Move the slider to the end")).toBeVisible();
+  await page.getByRole("slider", { name: "Replay position" }).fill("1000");
+  await expect(page.getByText("Move the slider to the end")).toHaveCount(0);
   await expect(page.getByText("Corvex", { exact: true }).first()).toBeVisible();
 });
 
