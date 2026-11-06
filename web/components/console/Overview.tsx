@@ -59,7 +59,7 @@ export function Overview({ c }: { c: State }) {
 
   return (
     <>
-      <section aria-live="polite" className="tile lg:col-span-4">
+      <section aria-live="polite" className="tile lg:col-span-5">
         <div className="flex items-center gap-3">
           <span data-testid="mode" className={`tag rounded-md px-3 py-1.5 ${modeTone[s.mode]}`}>{MODES[s.mode]}</span>
           <span className="tag text-snow/50">Session <span className="num">{s.sessionId.toString()}</span></span>
@@ -68,9 +68,9 @@ export function Overview({ c }: { c: State }) {
         <p className="mt-3 font-display text-2xl leading-tight">{line(s)}</p>
         {s.reopenAt > 0 && <p className="mt-2 text-sm text-slate"><Countdown to={s.reopenAt} /></p>}
         {s.expired && <p className="mt-2 text-sm text-rose">The reopen timed out. Anyone can refund the queue.</p>}
-        <div className="mt-auto flex flex-wrap items-center gap-1.5 pt-4" aria-label={`Reopen checks, ${passing} of 5 passing`}>
+        <div className="mt-auto flex flex-nowrap items-center gap-1 overflow-hidden pt-4" aria-label={`Reopen checks, ${passing} of 5 passing`}>
           {lights.map((l) => (
-            <span key={l.key} title={`${l.label}: ${l.tip}`} className={`tag flex items-center gap-1 rounded-md border px-1.5 py-1 text-[0.65rem] ${ok[l.key] ? "border-white/10 text-snow/70" : "border-rose/50 text-rose"}`}>
+            <span key={l.key} title={`${l.label}: ${l.tip}`} className={`flex items-center gap-1.5 whitespace-nowrap rounded-md border px-2 py-1 text-xs ${ok[l.key] ? "border-white/10 text-snow/70" : "border-rose/50 text-rose"}`}>
               <i aria-hidden="true" className={`h-1.5 w-1.5 rounded-full ${ok[l.key] ? "bg-lime" : "bg-rose"}`} />
               {l.label}
               <span className="sr-only">{ok[l.key] ? "passing" : "failing"}</span>
@@ -79,7 +79,7 @@ export function Overview({ c }: { c: State }) {
         </div>
       </section>
 
-      <div className="grid grid-cols-2 gap-4 lg:col-span-8 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-4 lg:col-span-7 lg:grid-cols-4">
         <Price label="Pool price" value={`$${fmtPrice(s.poolPrice)}`} hint="Where the pool trades now" />
         <Price label="Reference price" value={s.refPrice > 0n ? `$${fmtPrice(s.refPrice)}` : "none"} hint="The price feed" />
         <Price label="Gap" value={`${gap >= 0 ? "+" : ""}${gap.toFixed(2)}%`} hint="Pool against reference" tone={Math.abs(gap) > 2 ? "text-amber" : undefined} />
@@ -108,7 +108,7 @@ function Price({ label, value, hint, tone }: { label: string; value: string; hin
   return (
     <div className={`tile justify-between transition-colors duration-700 ${flash ? "border-lime/60 bg-lime/10" : ""}`}>
       <div className="tag text-snow/50">{label}</div>
-      <div className={`num mt-2 text-3xl ${tone ?? ""}`}>{value}</div>
+      <div className={`num mt-2 text-2xl xl:text-3xl ${tone ?? ""}`}>{value}</div>
       <div className="mt-1 text-xs text-slate">{hint}</div>
     </div>
   );

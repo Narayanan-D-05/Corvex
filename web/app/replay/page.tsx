@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Sections";
-import { LossBars } from "@/components/LossBars";
+import { PnlLive } from "@/components/PnlLive";
 import { WeekendTape, usePlayhead } from "@/components/WeekendTape";
-import { replayCaveat, scenarios as measured } from "@/lib/replay";
+import { replayCaveat } from "@/lib/replay";
 import { CROSS, scenarios, type WeekendOrder } from "@/lib/weekend";
 
 const phase = (t: number, queued: number) =>
@@ -19,10 +19,8 @@ export default function Replay() {
   const [picked, setPicked] = useState<WeekendOrder | null>(null);
   const { t, setT, playing, setPlaying } = usePlayhead();
   const scenario = scenarios[sc];
-  const result = measured.find((m) => m.id === scenario.id)!;
   const queued = scenario.orders.filter((o) => o.at <= t).length;
   const ph = phase(t, t < CROSS ? queued : 0);
-  const end = t >= 0.98;
 
   const pick = (k: number) => {
     setSc(k);
@@ -93,8 +91,7 @@ export default function Replay() {
           <h2 className="font-display text-4xl">What LPs lost</h2>
           <p className="mt-4 max-w-[60ch] text-slate">{scenario.note}</p>
           <div className="mt-8 max-w-[640px] rounded-2xl border border-line bg-paper-2 p-7">
-            <LossBars key={sc} scenario={result} reveal={end} />
-            {!end && <p className="mt-4 text-sm text-slate">Move the slider to the end to see the result.</p>}
+            <PnlLive scenario={scenario} t={t} />
           </div>
           <p className="mt-6 max-w-[70ch] text-sm text-slate">
             {replayCaveat} The end points above are measured. The price and P&amp;L paths between them are drawn to show the shape of the weekend.

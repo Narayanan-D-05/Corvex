@@ -46,8 +46,10 @@ export type WeekendScenario = {
   corvex: Keys;
   lpNoHook: Keys;
   lpCorvex: Keys;
+  /** the fee-only pool: an illustrative baseline, see the replay caveat */
+  lpFeeOnly: Keys;
   orders: WeekendOrder[];
-  pnl: { noHook: number; corvex: number };
+  pnl: { noHook: number; feeOnly: number; corvex: number };
 };
 
 const orders: WeekendOrder[] = [
@@ -68,8 +70,9 @@ export const scenarios: WeekendScenario[] = [
     corvex: [[0, 200], [0.1, 200], [0.12, 201.4], [0.3, 201.4], [0.32, 202.8], [0.55, 202.8], [0.57, 203.9], [0.85, 203.9], [0.89, 211.8], [1, 212]],
     lpNoHook: [[0, 0], [0.17, 0], [0.19, -22], [0.33, -18], [0.57, -18], [0.59, -36], [0.79, -36], [0.81, -70], [0.86, -70], [0.9, -115.75], [1, -115.75]],
     lpCorvex: [[0, 0], [1, 0]],
+    lpFeeOnly: [[0, 0], [0.17, 0], [0.19, 38], [0.33, 44], [0.57, 44], [0.59, 112], [0.79, 120], [0.81, 236], [0.86, 250], [0.9, 385.47], [1, 385.47]],
     orders,
-    pnl: { noHook: -115.75, corvex: 0 },
+    pnl: { noHook: -115.75, feeOnly: 385.47, corvex: 0 },
   },
   {
     id: "auction",
@@ -79,8 +82,9 @@ export const scenarios: WeekendScenario[] = [
     corvex: [[0, 200], [0.86, 200], [0.9, 204], [1, 212]],
     lpNoHook: [[0, 0], [0.86, 0], [0.9, -157.47], [1, -157.47]],
     lpCorvex: [[0, 0], [0.86, 0], [1, -2.93]],
+    lpFeeOnly: [[0, 0], [0.86, 0], [0.9, -30], [1, -48.25]],
     orders: [],
-    pnl: { noHook: -157.47, corvex: -2.93 },
+    pnl: { noHook: -157.47, feeOnly: -48.25, corvex: -2.93 },
   },
 ];
 

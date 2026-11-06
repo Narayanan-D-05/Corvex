@@ -31,13 +31,16 @@ test("landing: no horizontal scroll on a phone", async ({ browser }) => {
   await ctx.close();
 });
 
-test("replay: scrubber drives the stage and reveals the result", async ({ page }) => {
+test("replay: the profit and loss numbers follow the scrubber", async ({ page }) => {
   await page.goto("/replay");
   await expect(page.getByRole("heading", { name: "Replay" })).toBeVisible();
-  await expect(page.getByText("Move the slider to the end")).toBeVisible();
+  const pnl = page.getByRole("group", { name: "LP profit and loss, live" });
+  await expect(pnl).toContainText("0.00");
+  await page.getByRole("slider", { name: "Replay position" }).fill("500");
+  await expect(pnl).toContainText("-18.00");
   await page.getByRole("slider", { name: "Replay position" }).fill("1000");
-  await expect(page.getByText("Move the slider to the end")).toHaveCount(0);
-  await expect(page.getByText("Corvex", { exact: true }).first()).toBeVisible();
+  await expect(pnl).toContainText("-115.75");
+  await expect(pnl).toContainText("+385.47");
 });
 
 test("reduced motion: hero renders and page stays usable", async ({ browser }) => {

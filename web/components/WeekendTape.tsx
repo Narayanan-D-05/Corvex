@@ -53,9 +53,9 @@ export function WeekendTape({ scenario, t, onPick, picked }: { scenario: Weekend
   });
   const total = scenario.orders.reduce((s, o) => s + o.usd, 0);
   qKeys.push([CROSS - 0.001, total], [CROSS, 0], [1, 0]);
-  const pnlMin = Math.min(scenario.pnl.noHook, scenario.pnl.corvex, -20) * 1.1;
-  const ly = (v: number) => 12 + (1 - (v - pnlMin) / (20 - pnlMin)) * 100;
-  const done = t >= CROSS + 0.05;
+  const pnlMin = Math.min(scenario.pnl.noHook, scenario.pnl.feeOnly, scenario.pnl.corvex, -20) * 1.1;
+  const pnlMax = Math.max(scenario.pnl.noHook, scenario.pnl.feeOnly, scenario.pnl.corvex, 20) * 1.1;
+  const ly = (v: number) => 12 + (1 - (v - pnlMin) / (pnlMax - pnlMin)) * 100;
 
   return (
     <div className="space-y-2 text-snow">
@@ -113,9 +113,9 @@ export function WeekendTape({ scenario, t, onPick, picked }: { scenario: Weekend
           <path d={path(qKeys, t, qy, 0, sx)} stroke={C.blue} strokeWidth="2.5" fill="none" />
         </svg>
         <svg viewBox={`0 0 ${W / 2} 130`} className="h-auto w-full" role="img" aria-label="LP profit and loss">
-          <text x="4" y="12" fill={C.grey} fontSize="10.5">LP profit and loss, USDG (illustrative path)</text>
+          <text x="4" y="12" fill={C.grey} fontSize="10.5">LP profit and loss, USDG (the path between measured end points is illustrative)</text>
           <line x1={20} x2={W / 2 - 8} y1={ly(0)} y2={ly(0)} stroke={C.grid} />
-          {([["lpNoHook", C.rose], ["lpCorvex", C.paper]] as const).map(([k, c]) => (
+          {([["lpNoHook", C.rose], ["lpFeeOnly", C.amber], ["lpCorvex", C.paper]] as const).map(([k, c]) => (
             <path
               key={k}
               d={path(scenario[k], t, ly, 0, sx)}
@@ -124,12 +124,10 @@ export function WeekendTape({ scenario, t, onPick, picked }: { scenario: Weekend
               fill="none"
             />
           ))}
-          {done && (
-            <>
-              <text x={W / 2 - 10} y={ly(scenario.pnl.noHook) - 6} fill={C.rose} fontSize="10.5" textAnchor="end">{scenario.pnl.noHook.toFixed(2)}</text>
-              <text x={W / 2 - 10} y={ly(scenario.pnl.corvex) - 6} fill={C.paper} fontSize="10.5" textAnchor="end">{scenario.pnl.corvex.toFixed(2)}</text>
-            </>
-          )}
+          {([["lpNoHook", C.rose], ["lpFeeOnly", C.amber], ["lpCorvex", C.paper]] as const).map(([k, c]) => {
+            const v = at(scenario[k], t);
+            return <text key={k} x={W / 2 - 10} y={Math.max(24, Math.min(124, ly(v) - 6))} fill={c} fontSize="10.5" textAnchor="end">{v.toFixed(2)}</text>;
+          })}
         </svg>
       </div>
     </div>

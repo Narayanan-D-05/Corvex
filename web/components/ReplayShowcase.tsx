@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LossBars } from "./LossBars";
+import { PnlLive } from "./PnlLive";
 import { WeekendTape, usePlayhead } from "./WeekendTape";
-import { scenarios as measured } from "@/lib/replay";
 import { CROSS, scenarios } from "@/lib/weekend";
 import { reducedMotion } from "@/lib/motion";
 
@@ -20,7 +19,6 @@ export function ReplayShowcase() {
   const { t, setT, playing, setPlaying } = usePlayhead();
   const [still, setStill] = useState(false);
   const scenario = scenarios[sc];
-  const result = measured.find((m) => m.id === scenario.id)!;
   const queued = scenario.orders.filter((o) => o.at <= t).length;
 
   useEffect(() => {
@@ -83,8 +81,7 @@ export function ReplayShowcase() {
         <div className="mt-8 grid gap-8 md:grid-cols-[1fr_1.1fr] md:items-center">
           <p className="max-w-[44ch] text-lg text-slate">{scenario.note}</p>
           <div className="rounded-2xl border border-line bg-paper-2 p-7">
-            <LossBars key={sc} scenario={result} reveal={t >= 0.98} />
-            {t < 0.98 && <p className="mt-4 text-sm text-slate">The result appears when the weekend ends.</p>}
+            <PnlLive scenario={scenario} t={t} />
           </div>
         </div>
         <Link href="/replay" className="tag lift mt-10 inline-block rounded-md border border-white/20 px-6 py-3.5 hover:border-white/50">
