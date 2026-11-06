@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { reducedMotion } from "@/lib/motion";
 
 const stats = [
   {
@@ -40,7 +41,7 @@ function CountUp({ to, suffix }: { to: number; suffix: string }) {
   const [v, setV] = useState(0);
   useEffect(() => {
     if (!seen) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return setV(to);
+    if (reducedMotion()) return setV(to);
     const t0 = performance.now();
     let raf = 0;
     const tick = (t: number) => {

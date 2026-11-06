@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { MotionNotice } from "@/components/MotionNotice";
 
 const sans = Geist({ variable: "--font-geist", subsets: ["latin"] });
 const mono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -20,8 +21,11 @@ export const viewport: Viewport = { themeColor: "#0b1713" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable} antialiased`}>
-      <body className="min-h-screen">{children}</body>
+    <html lang="en" className={`${sans.variable} ${mono.variable} antialiased`} suppressHydrationWarning>
+      <body className="min-h-screen" suppressHydrationWarning>
+        {children}
+        <MotionNotice />
+      </body>
     </html>
   );
 }

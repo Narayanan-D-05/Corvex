@@ -6,6 +6,7 @@ import { LossBars } from "./LossBars";
 import { WeekendTape, usePlayhead } from "./WeekendTape";
 import { scenarios as measured } from "@/lib/replay";
 import { CROSS, scenarios } from "@/lib/weekend";
+import { reducedMotion } from "@/lib/motion";
 
 const caption = (t: number, queued: number) =>
   t < 0.02 ? "Friday close. The last price is recorded."
@@ -23,7 +24,7 @@ export function ReplayShowcase() {
   const queued = scenario.orders.filter((o) => o.at <= t).length;
 
   useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = reducedMotion();
     setStill(reduce);
     if (reduce) setT(1);
     else setPlaying(true);

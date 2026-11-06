@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { reducedMotion } from "@/lib/motion";
 
 /**
  * Time for a looping demo: it plays by itself, no scrolling needed. `paused` holds the current frame.
@@ -12,7 +13,7 @@ export function useCycle(period: number, paused = false, start = 0) {
   const pos = useRef(start);
 
   useEffect(() => {
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = reducedMotion();
     setStill(reduce);
     if (reduce) setU(0.9);
   }, []);

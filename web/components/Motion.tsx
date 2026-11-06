@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { reducedMotion } from "@/lib/motion";
 
-const fine = () => typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const fine = () => typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches && !reducedMotion();
 
 /** A soft lime light that follows the cursor over the dark sections. */
 export function CursorGlow() {

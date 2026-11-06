@@ -5,6 +5,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { reducedMotion } from "@/lib/motion";
+
+/** The cursor, -1 to 1 across the window. The canvas ignores pointer events, so it is read from the window. */
+const cursor = { x: 0, y: 0, sx: 0, sy: 0 };
 
 type Shape = "box" | "sphere" | "capsule" | "ring";
 type Piece = { shape: Shape; pos: [number, number, number]; size: number; color: string; spin: number; depth: number; phase: number; squash?: [number, number, number] };
@@ -93,17 +97,20 @@ function Pebble({ piece, bump, still }: { piece: Piece; bump: THREE.Texture; sti
   const s = piece.shape === "box" || piece.shape === "sphere" ? piece.size : piece.size;
   const sq = piece.squash ?? [1, 1, 1];
 
-  useFrame(({ clock, pointer }) => {
+  useFrame(({ clock }) => {
     const m = ref.current;
     if (!m) return;
     const t = still ? 0 : clock.elapsedTime;
-    const px = still ? 0 : pointer.x;
-    const py = still ? 0 : pointer.y;
-    m.position.x = piece.pos[0] + px * piece.depth * 0.7;
-    m.position.y = piece.pos[1] + py * piece.depth * 0.5 + Math.sin(t * 0.7 + piece.phase) * 0.18;
-    m.position.z = piece.pos[2];
-    m.rotation.x = piece.phase + t * piece.spin + py * 0.3;
-    m.rotation.y = piece.phase * 0.6 + t * piece.spin * 0.8 + px * 0.4;
+    const px = still ? 0 : cursor.sx;
+    const py = still ? 0 : cursor.sy;
+    // each piece circles its own anchor, bobs, spins, and leans toward the cursor at its own depth
+    const a = t * 0.55 * (piece.spin > 0 ? 1 : -1) + piece.phase;
+    m.position.x = piece.pos[0] + Math.cos(a) * 0.35 + px * piece.depth * 1.3;
+    m.position.y = piece.pos[1] + Math.sin(a * 1.3) * 0.35 + py * piece.depth * 0.9;
+    m.position.z = piece.pos[2] + Math.sin(a) * 0.3;
+    m.rotation.x = piece.phase + t * piece.spin * 2.4 + py * 0.5;
+    m.rotation.y = piece.phase * 0.6 + t * piece.spin * 2.0 + px * 0.7;
+    m.rotation.z = Math.sin(a * 0.7) * 0.3;
   });
 
   return (
@@ -115,6 +122,11 @@ function Pebble({ piece, bump, still }: { piece: Piece; bump: THREE.Texture; sti
 
 function Pieces({ preset, still }: { preset: "hero" | "ring"; still: boolean }) {
   const bump = useClayBump();
+  // ease the cursor so the scene glides instead of jumping
+  useFrame(() => {
+    cursor.sx += (cursor.x - cursor.sx) * 0.06;
+    cursor.sy += (cursor.y - cursor.sy) * 0.06;
+  });
   return (
     <>
       {presets[preset].map((p, i) => (
@@ -131,12 +143,20 @@ export default function ClayScene({ preset = "hero" }: { preset?: "hero" | "ring
   const [still, setStill] = useState(false);
 
   useEffect(() => {
-    setStill(window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+    const move = (e: PointerEvent) => {
+      cursor.x = (e.clientX / window.innerWidth) * 2 - 1;
+      cursor.y = -((e.clientY / window.innerHeight) * 2 - 1);
+    };
+    window.addEventListener("pointermove", move, { passive: true });
+    setStill(reducedMotion());
     const el = wrap.current;
     if (!el) return;
     const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { rootMargin: "100px" });
     io.observe(el);
-    return () => io.disconnect();
+    return () => {
+      io.disconnect();
+      window.removeEventListener("pointermove", move);
+    };
   }, []);
 
   return (

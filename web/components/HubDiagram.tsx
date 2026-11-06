@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { reducedMotion } from "@/lib/motion";
 
 /** The pieces Corvex connects, as a hub with pulses running along the lines. */
 const left = [
@@ -20,7 +21,7 @@ const ry = (i: number) => 98 + i * 124;
 
 export function HubDiagram() {
   const [motion, setMotion] = useState(false);
-  useEffect(() => setMotion(!window.matchMedia("(prefers-reduced-motion: reduce)").matches), []);
+  useEffect(() => setMotion(!reducedMotion()), []);
 
   const inPaths = left.map((_, i) => `M${LX + TW} ${ly(i) + TH / 2} C 340 ${ly(i) + TH / 2}, 340 ${HUB.y}, ${HUB.x - 52} ${HUB.y}`);
   const outPaths = right.map((_, i) => `M${HUB.x + 52} ${HUB.y} C 460 ${HUB.y}, 460 ${ry(i) + TH / 2}, ${800 - LX - TW} ${ry(i) + TH / 2}`);
