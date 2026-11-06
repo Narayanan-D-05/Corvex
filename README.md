@@ -211,7 +211,7 @@ Deployed and exercised on 6 Nov 2026. The pool uses mock TSLA and USDG tokens, a
 | Robinhood Chain Testnet (46630) | ReopenCrossHook | [0x7D5F1c10Ae674558d40E3573e5fb2B1AC65860C8](https://explorer.testnet.chain.robinhood.com/address/0x7D5F1c10Ae674558d40E3573e5fb2B1AC65860C8) |
 | | PoolManager (v4) | [0x62Ab4b063018CEdD2433E8197af83700E4fC22ce](https://explorer.testnet.chain.robinhood.com/address/0x62Ab4b063018CEdD2433E8197af83700E4fC22ce) |
 | | PrintBroadcaster | [0xc3aB1Fbc933adCb04C55cC6173bB68BBaCd0C763](https://explorer.testnet.chain.robinhood.com/address/0xc3aB1Fbc933adCb04C55cC6173bB68BBaCd0C763) |
-| | ReopenReceiver | [0x3524e53F307b66E121d1Aee6173259f605c714C2](https://explorer.testnet.chain.robinhood.com/address/0x3524e53F307b66E121d1Aee6173259f605c714C2) |
+| | ReopenReceiver | [0x536124951AF2E37d99ED99C6EB5e51f25e1265dB](https://explorer.testnet.chain.robinhood.com/address/0x536124951AF2E37d99ED99C6EB5e51f25e1265dB) |
 | | TSLA / USDG (mocks) | [0x535Ce55d...9B98](https://explorer.testnet.chain.robinhood.com/address/0x535Ce55d2802224E906D76F904FB3217EC4E9B98) / [0xEDF01941...92D1](https://explorer.testnet.chain.robinhood.com/address/0xEDF0194112B3c4d6D6986c5cd4E6F9c2C55992D1) |
 | Arbitrum Sepolia | SessionPrintOracle | [0x62Ab4b063018CEdD2433E8197af83700E4fC22ce](https://sepolia.arbiscan.io/address/0x62Ab4b063018CEdD2433E8197af83700E4fC22ce) |
 | | ReopenController | [0x535Ce55d2802224E906D76F904FB3217EC4E9B98](https://sepolia.arbiscan.io/address/0x535Ce55d2802224E906D76F904FB3217EC4E9B98) |
