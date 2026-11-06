@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Wordmark } from "@/components/Logo";
 import { Overview } from "@/components/console/Overview";
-import { MarketView } from "@/components/console/MarketView";
 import { Queue } from "@/components/console/Queue";
 import { Orders } from "@/components/console/Orders";
 import { Prints } from "@/components/console/Prints";
@@ -16,8 +15,7 @@ import { useCorvex } from "@/lib/useCorvex";
 import { useWallet } from "@/lib/useWallet";
 
 const tabs = [
-  { id: "overview", label: "Overview" },
-  { id: "orders", label: "Orders" },
+  { id: "trade", label: "Trade" },
   { id: "prints", label: "Prints" },
   { id: "liquidity", label: "Liquidity" },
 ] as const;
@@ -26,11 +24,12 @@ type Tab = (typeof tabs)[number]["id"];
 export default function Console() {
   const c = useCorvex();
   const w = useWallet();
-  const [tab, setTab] = useState<Tab>("overview");
+  const [tab, setTab] = useState<Tab>("trade");
   const [walletError, setWalletError] = useState<string | null>(null);
 
   useEffect(() => {
-    const h = window.location.hash.slice(1) as Tab;
+    const raw = window.location.hash.slice(1);
+    const h = (raw === "overview" || raw === "orders" ? "trade" : raw) as Tab;
     if (tabs.some((t) => t.id === h)) setTab(h);
   }, []);
   const pick = (t: Tab) => {
@@ -86,15 +85,14 @@ export default function Console() {
         )}
         {c.snap && c.deployment && (
           <>
-            {tab === "overview" && (
+            {tab === "trade" && (
               <div className="space-y-8">
                 <Overview c={c} />
-                <MarketView c={c} />
                 {isLocal ? <DemoControls c={c} w={w} onChange={c.refresh} /> : <LivePanel c={c} w={w} onChange={c.refresh} />}
+                <Orders c={c} w={w} onChange={c.refresh} />
                 <Queue c={c} />
               </div>
             )}
-            {tab === "orders" && <Orders c={c} w={w} onChange={c.refresh} />}
             {tab === "prints" && <Prints c={c} />}
             {tab === "liquidity" && <Liquidity c={c} />}
           </>

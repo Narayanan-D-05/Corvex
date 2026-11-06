@@ -72,7 +72,14 @@ export function LivePanel({ c, w, onChange }: { c: State; w: Wallet; onChange: (
         {msg && <p role="status" className={`mt-3 text-sm ${msg.ok ? "text-mint" : "text-rose"}`}>{msg.text}</p>}
       </div>
 
-      <div>
+    </section>
+  );
+}
+
+/** The real weekend this deployment has run, every step a transaction on the testnets. */
+export function ProofList() {
+  return (
+    <div>
         <h2 className="text-lg font-semibold">A weekend that already ran here</h2>
         <p className="mt-1 text-sm text-slate">Every step is a real transaction on these testnets.</p>
         <ol className="mt-4 divide-y divide-line rounded-2xl border border-line">
@@ -85,7 +92,6 @@ export function LivePanel({ c, w, onChange }: { c: State; w: Wallet; onChange: (
             </li>
           ))}
         </ol>
-      </div>
-    </section>
+    </div>
   );
 }

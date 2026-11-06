@@ -2,8 +2,10 @@
 
 import { fmtPrice, fmtUnits } from "@/lib/chain";
 import type { State } from "@/lib/useCorvex";
+import { isLocal } from "@/lib/chain";
+import { ProofList } from "./LivePanel";
 
-const STATUS = ["In transit (CCIP takes several minutes)", "Recorded", "Attested", "Disputed"];
+const STATUS = ["In transit", "Recorded", "Attested", "Disputed"];
 const tone = ["text-slate", "text-amber", "text-mint", "text-rose"];
 
 function Status({ v, name }: { v: number; name: string }) {
@@ -28,6 +30,9 @@ export function Prints({ c }: { c: State }) {
       <p className="max-w-[60ch] text-slate">
         Each print is a token price, multiplier-adjusted. CCIP delivers it as Recorded, and the CRE workflow marks it Attested or Disputed after comparing it with the official price.
       </p>
+      <p className="max-w-[60ch] text-sm text-slate">
+        In transit means the hook has sent the print and the destination chain has not received it yet. A message from Robinhood Chain waits for finality first, so it usually takes 15 to 30 minutes.
+      </p>
       <ul className="grid gap-4 md:grid-cols-2" data-testid="prints">
         {c.prints.map((p) => (
           <li key={`${p.sessionId}-${p.kind}`} className="rounded-2xl border border-line p-5">
@@ -47,6 +52,7 @@ export function Prints({ c }: { c: State }) {
           </li>
         ))}
       </ul>
+      {!isLocal && <ProofList />}
     </div>
   );
 }

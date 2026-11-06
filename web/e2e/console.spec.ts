@@ -6,7 +6,7 @@ test("console: full weekend workflow", async ({ page }) => {
   await expect(page.getByTestId("mode")).toHaveText("Normal");
 
   await page.getByLabel("Demo account").selectOption({ index: 1 });
-  await page.getByRole("button", { name: "Get test tokens" }).click();
+  await page.getByLabel("Demo controls").getByRole("button", { name: "Get test tokens" }).click();
   await expect(page.getByText("Working: tokens")).toHaveCount(0, { timeout: 30_000 });
 
   await page.getByRole("button", { name: "Close market" }).click();
@@ -14,7 +14,6 @@ test("console: full weekend workflow", async ({ page }) => {
   await expect(page.getByText("Market closed: big trades wait for the open.")).toBeVisible();
 
   // a large buy: the form says it will queue, and then it does
-  await page.getByRole("button", { name: "Orders", exact: true }).click();
   await page.getByLabel(/Amount/).fill("10000");
   await expect(page.getByTestId("hint")).toContainText("Queues until the open");
   await page.getByLabel(/Max price/).fill("215");
@@ -27,7 +26,6 @@ test("console: full weekend workflow", async ({ page }) => {
   await expect(page.getByTestId("hint")).toContainText("Fills now");
 
   // reopen: the cross is blocked until it runs
-  await page.getByRole("button", { name: "Overview", exact: true }).click();
   await page.getByLabel("Reopen price").fill("212");
   await page.getByRole("button", { name: "Reopen market" }).click();
   await expect(page.getByTestId("mode")).toHaveText("Awaiting reopen", { timeout: 30_000 });
@@ -35,7 +33,6 @@ test("console: full weekend workflow", async ({ page }) => {
   await expect(page.getByTestId("mode")).not.toHaveText("Awaiting reopen", { timeout: 30_000 });
 
   // the opening print is recorded and reaches the oracles as Recorded, then Attested
-  await page.getByRole("button", { name: "Overview", exact: true }).click();
   await page.getByRole("button", { name: "Attest prints" }).click();
   await page.getByRole("button", { name: "Prints", exact: true }).click();
   await expect(page.getByTestId("prints")).toContainText("$212.00", { timeout: 30_000 });
@@ -46,7 +43,7 @@ test("console: full weekend workflow", async ({ page }) => {
   await expect(page.getByTestId("crosses").locator("tbody tr")).toHaveCount(1);
 
   // the buyer withdraws the fill
-  await page.getByRole("button", { name: "Orders", exact: true }).click();
+  await page.getByRole("button", { name: "Trade", exact: true }).click();
   await expect(page.getByText("TSLA").last()).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "Withdraw" }).first().click();
   await expect(page.getByText("Withdrawn.")).toBeVisible({ timeout: 30_000 });

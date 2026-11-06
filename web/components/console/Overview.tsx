@@ -72,8 +72,15 @@ export function Overview({ c }: { c: State }) {
         {s.expired && <p className="mt-3 text-rose">The reopen timed out. Queued orders can be refunded by anyone.</p>}
       </section>
 
-      <section>
-        <h2 className="text-lg font-semibold">Reopen checks</h2>
+      <section className="grid gap-4 md:grid-cols-4">
+        <Figure label="Pool price" value={`$${fmtPrice(s.poolPrice)}`} />
+        <Figure label="Reference price" value={s.refPrice > 0n ? `$${fmtPrice(s.refPrice)}` : "none"} />
+        <Figure label="Gap" value={`${gap >= 0 ? "+" : ""}${gap.toFixed(2)}%`} />
+        <Figure label={s.mode === 3 ? "Cross price" : "Last cross price"} value={s.mode === 3 ? `$${fmtPrice(s.crossPrice)}` : c.crosses[0] ? `$${fmtPrice(c.crosses[0].price)}` : "none yet"} />
+        {s.multiplier !== 10n ** 18n && <Figure label="Multiplier" value={`${(Number(s.multiplier) / 1e18).toFixed(2)}x`} />}
+      </section>
+      <details className="rounded-xl border border-line px-5 py-3">
+        <summary className="cursor-pointer text-sm font-medium">Reopen checks <span className="font-normal text-slate">({Object.values(ok).filter(Boolean).length} of 5 passing)</span></summary>
         <ul className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-5">
           {lights.map((l) => (
             <li key={l.key} title={l.tip} className="flex items-center gap-3 rounded-xl border border-line px-4 py-3">
@@ -84,15 +91,7 @@ export function Overview({ c }: { c: State }) {
           ))}
         </ul>
         <p className="mt-3 text-sm text-slate">A cross runs only when all five pass.</p>
-      </section>
-
-      <section className="grid gap-4 md:grid-cols-3">
-        <Figure label="Pool price" value={`$${fmtPrice(s.poolPrice)}`} />
-        <Figure label="Reference price" value={s.refPrice > 0n ? `$${fmtPrice(s.refPrice)}` : "none"} />
-        <Figure label="Gap" value={`${gap >= 0 ? "+" : ""}${gap.toFixed(2)}%`} />
-        {s.mode === 3 && <Figure label="Cross price" value={`$${fmtPrice(s.crossPrice)}`} />}
-        {s.multiplier !== 10n ** 18n && <Figure label="Multiplier" value={`${(Number(s.multiplier) / 1e18).toFixed(2)}x`} />}
-      </section>
+      </details>
     </div>
   );
 }
