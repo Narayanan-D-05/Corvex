@@ -1,0 +1,36 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+/**
+ * Time for a looping demo: it plays by itself, no scrolling needed. `paused` holds the current frame.
+ * With reduced motion it rests on one finished frame instead.
+ */
+export function useCycle(period: number, paused = false) {
+  const [u, setU] = useState(0);
+  const [still, setStill] = useState(false);
+
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setStill(reduce);
+    if (reduce) setU(0.9);
+  }, []);
+
+  useEffect(() => {
+    if (still || paused) return;
+    let raf = 0;
+    let last = performance.now();
+    let acc = 0;
+    const tick = (now: number) => {
+      acc = (acc + (now - last) / (period * 1000)) % 1;
+      last = now;
+      // about 20 updates a second is plenty for a status table
+      setU((prev) => (Math.abs(acc - prev) > 0.004 || acc < prev ? acc : prev));
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [period, paused, still]);
+
+  return { u, still };
+}

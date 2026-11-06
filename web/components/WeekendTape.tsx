@@ -58,7 +58,7 @@ export function WeekendTape({ scenario, t, onPick, picked }: { scenario: Weekend
   const done = t >= CROSS + 0.05;
 
   return (
-    <div className="space-y-2 text-paper">
+    <div className="space-y-2 text-snow">
       <svg viewBox={`0 0 ${W} 300`} className="h-auto w-full" role="img" aria-label="Pool price over the weekend: no-hook pool, Corvex pool, Chainlink price and queued orders">
         <rect x={x(0)} y={py(CLOSE_PRICE * (1 + BAND))} width={x(CROSS) - x(0)} height={py(CLOSE_PRICE * (1 - BAND)) - py(CLOSE_PRICE * (1 + BAND))} fill="#2650ff" opacity="0.16" />
         {[CLOSE_PRICE * (1 + BAND), CLOSE_PRICE * (1 - BAND)].map((v, i) => (

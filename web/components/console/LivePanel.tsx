@@ -61,7 +61,7 @@ export function LivePanel({ c, w, onChange }: { c: State; w: Wallet; onChange: (
           <button
             disabled={!!busy || !w.account || c.snap?.mode !== 2}
             onClick={() => run("cross", "The cross ran. Your fill is under Claims.", () => w.write({ address: d.hook, abi: hookAbi, functionName: "executeCross", args: [poolKey(d)] }))}
-            className="rounded-lg bg-cobalt px-4 py-2 text-sm font-medium text-white disabled:opacity-40"
+            className="rounded-lg bg-cobalt px-4 py-2 text-sm font-medium text-night disabled:opacity-40"
           >
             Run the cross
           </button>

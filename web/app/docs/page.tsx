@@ -44,21 +44,22 @@ const sections = [
 
 export default function Docs() {
   return (
-    <>
-      <Navbar alwaysSolid />
-      <main className="mx-auto max-w-[760px] px-4 pb-24 pt-32">
-        <h1 className="font-display text-6xl leading-none md:text-7xl">Docs</h1>
+    <div className="dark-ui">
+      <Navbar />
+      <main className="mx-auto max-w-[760px] px-6 pb-24 pt-36">
+        <p className="tag text-lime">[ Docs ]</p>
+        <h1 className="mt-4 font-display text-6xl leading-none md:text-7xl">Docs</h1>
         <p className="mt-5 text-lg text-slate">How Corvex works, end to end.</p>
         {sections.map((s) => (
           <section key={s.title} className="mt-14">
             <h2 className="font-display text-4xl">{s.title}</h2>
             {s.body.map((p, i) => (
-              <p key={i} className="mt-4 leading-[1.7]">{p}</p>
+              <p key={i} className="mt-4 leading-[1.7] text-ink/85">{p}</p>
             ))}
           </section>
         ))}
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

@@ -1,10 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Instrument_Serif, JetBrains_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const display = Instrument_Serif({ variable: "--font-instrument", subsets: ["latin"], weight: "400", style: ["normal", "italic"] });
-const sans = Bricolage_Grotesque({ variable: "--font-bricolage", subsets: ["latin"] });
-const mono = JetBrains_Mono({ variable: "--font-jetbrains", subsets: ["latin"] });
+const sans = Geist({ variable: "--font-geist", subsets: ["latin"] });
+const mono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 const title = "Corvex";
 const description = "Monday's open, cleared once. A Uniswap v4 hook that clears stock-token orders in one fair cross at the market open.";
@@ -17,11 +16,11 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: `${title}: Monday's open, cleared once`, description },
 };
 
-export const viewport: Viewport = { themeColor: "#0b1730" };
+export const viewport: Viewport = { themeColor: "#0b1713" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable} antialiased`}>
+    <html lang="en" className={`${sans.variable} ${mono.variable} antialiased`}>
       <body className="min-h-screen">{children}</body>
     </html>
   );

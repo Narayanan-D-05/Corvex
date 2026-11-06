@@ -62,7 +62,7 @@ export function DemoControls({ c, w, onChange }: { c: State; w: Wallet; onChange
           <input value={price} onChange={(e) => setPrice(e.target.value)} inputMode="decimal" className="num w-24 rounded-lg border border-line bg-paper px-3 py-2" />
         </label>
         <button disabled={!!busy} onClick={() => run("open", async () => { await tx(d.marketStatus, marketAbi, "setOpen", [true]); await tx(d.feed, feedAbi, "setAnswer", [BigInt(Math.round(Number(price) * 1e8))]); await tx(d.hook, hookAbi, "poke", [poolKey(d)]); })} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Reopen market</button>
-        <button disabled={!!busy} onClick={() => run("cross", () => tx(d.hook, hookAbi, "executeCross", [poolKey(d)]))} className="rounded-lg bg-cobalt px-4 py-2 text-sm font-medium text-white disabled:opacity-40">Run cross</button>
+        <button disabled={!!busy} onClick={() => run("cross", () => tx(d.hook, hookAbi, "executeCross", [poolKey(d)]))} className="rounded-lg bg-cobalt px-4 py-2 text-sm font-medium text-night disabled:opacity-40">Run cross</button>
         <button disabled={!!busy || !d.oracleArb} onClick={() => run("attest", attest)} className="rounded-lg border border-ink px-4 py-2 text-sm font-medium disabled:opacity-40">Attest prints</button>
       </div>
       {busy && <p className="mt-3 text-sm text-slate">Working: {busy}</p>}

@@ -38,7 +38,7 @@ export default function Console() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="dark-ui min-h-screen">
       <header className="border-b border-line bg-paper/90 backdrop-blur">
         <div className="mx-auto flex max-w-[1100px] flex-wrap items-center justify-between gap-3 px-4 py-3">
           <Link href="/" aria-label="Corvex home"><Wordmark /></Link>

@@ -1,16 +1,33 @@
 @import "tailwindcss";
 
+/* Deep green and lime. Light sage is the interlude; .dark-ui turns any subtree dark. */
 :root {
-  --paper: #e8edf3;
-  --paper-2: #dde4ed;
-  --ink: #10203a;
-  --night: #0b1730;
-  --slate: #5c6b82;
-  --line: #c3cdda;
-  --cobalt: #2650ff;
-  --mint: #12a072;
-  --amber: #b97c00;
-  --rose: #c2412d;
+  --paper: #edf0e6;
+  --paper-2: #e0e6d6;
+  --ink: #0e1d17;
+  --night: #0b1713;
+  --slate: #596c61;
+  --line: #ccd5c1;
+  --cobalt: #c9ff5c;
+  --mint: #12794b;
+  --amber: #8f6200;
+  --rose: #b53a28;
+  --snow: #e8eee4;
+  --focus: #0e1d17;
+}
+
+.dark-ui {
+  --paper: #0b1713;
+  --paper-2: #12241e;
+  --ink: #e8eee4;
+  --slate: #8da398;
+  --line: #22382f;
+  --mint: #5fe3a1;
+  --amber: #e5b552;
+  --rose: #ff8a73;
+  --focus: #c9ff5c;
+  background-color: var(--paper);
+  color: var(--ink);
 }
 
 @theme inline {
@@ -21,16 +38,18 @@
   --color-slate: var(--slate);
   --color-line: var(--line);
   --color-cobalt: var(--cobalt);
+  --color-lime: var(--cobalt);
   --color-mint: var(--mint);
   --color-amber: var(--amber);
   --color-rose: var(--rose);
-  --font-display: var(--font-instrument), Georgia, serif;
-  --font-sans: var(--font-bricolage), system-ui, sans-serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --color-snow: var(--snow);
+  --font-display: var(--font-geist), system-ui, sans-serif;
+  --font-sans: var(--font-geist), system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 html {
-  background: var(--paper);
+  background: var(--night);
   color: var(--ink);
   scroll-behavior: smooth;
 }
@@ -41,13 +60,61 @@ body {
   line-height: 1.6;
 }
 
+.font-display {
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+
 .num {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
+/* the small monospace bracket label: [ STUDIO ] */
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* thin vertical column lines behind a dark section */
+.columns {
+  background-image: linear-gradient(to right, rgba(232, 238, 228, 0.07) 1px, transparent 1px);
+  background-size: 25% 100%;
+  border-left: 1px solid rgba(232, 238, 228, 0.07);
+  border-right: 1px solid rgba(232, 238, 228, 0.07);
+}
+
+/* hover: linked cards and buttons answer the pointer */
+.lift {
+  transition: transform 180ms ease, background-color 180ms ease, border-color 180ms ease;
+}
+.lift:hover {
+  transform: translateY(-2px);
+}
+.lift:active {
+  transform: translateY(0) scale(0.99);
+}
+
+.pulse-dot {
+  animation: pulse-x 2.8s linear infinite;
+}
+@keyframes pulse-x {
+  0% { left: 0; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+@keyframes pulse-y {
+  0% { top: 0; opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
 :focus-visible {
-  outline: 2px solid var(--cobalt);
+  outline: 2px solid var(--focus);
   outline-offset: 3px;
 }
 
@@ -55,6 +122,7 @@ body {
   html { scroll-behavior: auto; }
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
 }

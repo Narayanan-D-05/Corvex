@@ -52,7 +52,7 @@ function CountUp({ to, suffix }: { to: number; suffix: string }) {
     return () => cancelAnimationFrame(raf);
   }, [seen, to]);
   return (
-    <span ref={ref} className="num">
+    <span ref={ref} className="tabular-nums">
       {v.toFixed(to % 1 ? 1 : 0)}
       {suffix}
     </span>
@@ -61,23 +61,26 @@ function CountUp({ to, suffix }: { to: number; suffix: string }) {
 
 export function Problem() {
   return (
-    <section className="mx-auto max-w-[1100px] px-4 py-28">
-      <h2 className="max-w-[18ch] font-display text-5xl leading-[1.02] md:text-7xl">The market opens. The first bot to arrive takes the gap.</h2>
-      <p className="mt-6 max-w-[56ch] text-lg text-slate">
-        Stock tokens trade all weekend against Friday&apos;s price. Monday&apos;s news lands in one jump, and liquidity providers pay for it.
-      </p>
-      <div className="mt-16 grid gap-10 md:grid-cols-3">
-        {stats.map((s) => (
-          <figure key={s.value} className="border-t border-line pt-6">
-            <div className="font-display text-7xl leading-none">
-              <CountUp to={s.value} suffix={s.suffix} />
-            </div>
-            <figcaption className="mt-4 max-w-[30ch] text-base">{s.label}</figcaption>
-            <a href={s.href} target="_blank" rel="noreferrer" className="mt-3 block text-sm text-slate underline-offset-4 hover:underline">
-              {s.source}
-            </a>
-          </figure>
-        ))}
+    <section className="bg-paper text-ink">
+      <div className="mx-auto max-w-[1200px] px-6 py-28">
+        <p className="tag text-mint">[ The problem ]</p>
+        <h2 className="mt-5 max-w-[18ch] font-display text-5xl leading-[1.02] md:text-7xl">The market opens. The first bot to arrive takes the gap.</h2>
+        <p className="mt-6 max-w-[56ch] text-lg text-slate">
+          Stock tokens trade all weekend against Friday&apos;s price. Monday&apos;s news lands in one jump, and liquidity providers pay for it.
+        </p>
+        <div className="mt-16 grid gap-10 md:grid-cols-3">
+          {stats.map((s) => (
+            <figure key={s.value} className="border-t border-ink/20 pt-6">
+              <div className="font-display text-7xl leading-none">
+                <CountUp to={s.value} suffix={s.suffix} />
+              </div>
+              <figcaption className="mt-4 max-w-[30ch] text-base">{s.label}</figcaption>
+              <a href={s.href} target="_blank" rel="noreferrer" className="mt-3 block text-sm text-slate underline-offset-4 hover:underline">
+                {s.source}
+              </a>
+            </figure>
+          ))}
+        </div>
       </div>
     </section>
   );

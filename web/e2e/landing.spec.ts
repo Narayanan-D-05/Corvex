@@ -5,12 +5,10 @@ test("landing: hero, navbar behaviour, sections", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Monday's open, cleared once.");
 
   const nav = page.getByRole("navigation", { name: "Main" });
-  // over the hero: no bar
-  await expect(nav).toHaveClass(/bg-transparent/);
+  // the bar stays on screen the whole way down
   await expect(nav.getByRole("link", { name: "Launch app" })).toBeVisible();
-
   await page.evaluate(() => window.scrollTo(0, window.innerHeight * 1.5));
-  await expect(nav).toHaveClass(/backdrop-blur-xl/);
+  await expect(nav.getByRole("link", { name: "Launch app" })).toBeVisible();
 
   await page.evaluate(() => document.getElementById("how")!.scrollIntoView());
   await expect(page.getByRole("heading", { name: "How a cross works" })).toBeVisible();

@@ -32,10 +32,11 @@ export default function Replay() {
   };
 
   return (
-    <>
-      <Navbar alwaysSolid />
-      <main className="mx-auto max-w-[1100px] px-4 pb-24 pt-32">
-        <h1 className="font-display text-6xl leading-none md:text-7xl">Replay</h1>
+    <div className="dark-ui">
+      <Navbar />
+      <main className="mx-auto max-w-[1200px] px-6 pb-24 pt-36">
+        <p className="tag text-lime">[ Replay ]</p>
+        <h1 className="mt-4 font-display text-6xl leading-none md:text-7xl">Replay</h1>
         <p className="mt-5 max-w-[58ch] text-lg text-slate">One weekend on one time axis. Press play or drag the slider, and click an order to follow it.</p>
 
         <div className="mt-8 flex flex-wrap gap-2" role="group" aria-label="Scenario">
@@ -44,12 +45,12 @@ export default function Replay() {
           ))}
         </div>
 
-        <section className="mt-6 rounded-2xl bg-night p-5 text-paper md:p-7">
+        <section className="mt-6 rounded-2xl border border-line bg-[#0e1f19] p-5 text-snow md:p-7">
           <WeekendTape scenario={scenario} t={t} picked={picked} onPick={setPicked} />
           <div className="mt-5 flex items-center gap-4">
             <button
               onClick={() => (t >= 1 ? (setT(0), setPlaying(true)) : setPlaying(!playing))}
-              className="w-20 rounded-lg bg-cobalt px-4 py-2 text-sm font-medium text-white"
+              className="w-20 rounded-lg bg-cobalt px-4 py-2 text-sm font-medium text-night"
             >
               {playing ? "Pause" : t >= 1 ? "Replay" : "Play"}
             </button>
@@ -65,23 +66,23 @@ export default function Replay() {
           </div>
           <div className="mt-4 grid gap-4 md:grid-cols-[1fr_1.2fr]">
             <div>
-              <span className="rounded-md bg-paper/10 px-3 py-1 text-sm font-semibold">{ph.mode}</span>
-              <p className="mt-3 max-w-[44ch] text-paper/80">{ph.line}</p>
+              <span className="rounded-md bg-snow/10 px-3 py-1 text-sm font-semibold">{ph.mode}</span>
+              <p className="mt-3 max-w-[44ch] text-snow/80">{ph.line}</p>
             </div>
-            <div className="min-h-[4.5rem] rounded-lg border border-paper/15 p-4 text-sm">
+            <div className="min-h-[4.5rem] rounded-lg border border-snow/15 p-4 text-sm">
               {picked ? (
                 <>
                   <p className="font-semibold">{picked.side === "buy" ? "Buy" : "Sell"} of ${picked.usd.toLocaleString("en-US")}, limit ${picked.limit}</p>
-                  <p className="mt-1 text-paper/75">{picked.story}</p>
+                  <p className="mt-1 text-snow/75">{picked.story}</p>
                 </>
               ) : (
-                <p className="text-paper/60">{scenario.orders.length ? "Click an order dot to see why it was queued and what happened to it." : "No orders queued in this weekend. The auction does the work."}</p>
+                <p className="text-snow/60">{scenario.orders.length ? "Click an order dot to see why it was queued and what happened to it." : "No orders queued in this weekend. The auction does the work."}</p>
               )}
             </div>
           </div>
-          <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-1 text-xs text-paper/65">
+          <ul className="mt-5 flex flex-wrap gap-x-5 gap-y-1 text-xs text-snow/65">
             <li><i className="mr-2 inline-block h-2 w-2 rounded-full bg-[#ff8a73]" />No hook</li>
-            <li><i className="mr-2 inline-block h-2 w-2 rounded-full bg-paper" />Corvex</li>
+            <li><i className="mr-2 inline-block h-2 w-2 rounded-full bg-snow" />Corvex</li>
             <li><i className="mr-2 inline-block h-2 w-2 rounded-full bg-[#6f95ff]" />Chainlink price, grey and dashed while dark</li>
             <li><i className="mr-2 inline-block h-2 w-2 rounded-full bg-[#2ee6a0]" />Filled at p*</li>
             <li><i className="mr-2 inline-block h-2 w-2 rounded-full bg-[#e0a030]" />Refunded</li>
@@ -101,6 +102,6 @@ export default function Replay() {
         </section>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }
