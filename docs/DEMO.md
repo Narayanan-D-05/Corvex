@@ -201,10 +201,11 @@ cre workflow simulate session-attestor --target staging-settings --non-interacti
 
 **Is this live?** It runs on Robinhood Chain Testnet, Arbitrum Sepolia and Base Sepolia with mock TSLA and USDG, a mock price feed and a keeper-written market status. Every step in the demo weekend is a real transaction. Robinhood's testnet has no v4, so the v4 PoolManager is deployed from the real v4-core.
 
-**What is not built?** The fork replay of the real June 26 weekend (it needs a mainnet RPC), a CCIP token lane for the mock USDG (so cross-chain fills only come back locally), and the order-size limit above.
+**What is not built?** The fork replay of the real June 26 weekend (it needs a mainnet RPC), a CCIP token lane for the mock USDG (so cross-chain fills only come back locally), the order-size limit above, and one hook edge case: `afterSwap` applies the 2% band check even to a swap that was only queued, so a dark pool already outside the band rejects every swap until it is reopened. The fix is to skip that check for queued swaps; it needs a hook redeploy, so it is not in the testnet deployment.
 
 ## 11. If something goes wrong on camera
 
+- **Every swap fails with `0x90bfb865` (the hook's `ExceedsBand`):** the pool is in Dark mode but its price is more than 2% away from the dark reference. This happens if the market was closed while the pool was still in a gap auction, for example right after a reopen at $224 with the pool at $212. Press **Reopen market** at the pool's price (for example 212). The console now warns about it and the Close button closes at the pool's price when the two are far apart.
 - **The pool isn't dark:** press Close market again.
 - **It is stuck in Auction:** one small buy returns it to Normal.
 - **The feed is stale (Fresh feed is red):** press Reopen market at 212.

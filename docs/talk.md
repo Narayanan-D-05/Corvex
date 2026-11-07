@@ -179,6 +179,7 @@ Two parts. The pitch is the spoken story (about 3 minutes). The demo is what you
 
 ## If something goes wrong
 
+- **Swaps fail with 0x90bfb865:** you closed the market during an auction, so the pool is far from the dark reference. Press Reopen market at the pool price (212) and start again.
 - **The pool isn't dark:** press Close market again.
 - **It is stuck in Auction:** one small buy returns it to Normal.
 - **Fresh feed is red:** press Reopen market at 212.

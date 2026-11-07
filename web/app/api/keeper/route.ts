@@ -55,8 +55,14 @@ export async function POST(req: Request) {
     const raw = body.price ? BigInt(Math.round(body.price * 1e8)) : answer;
     const txs: Hex[] = [];
     if (body.action === "close") {
+      // The hook freezes the last reference as the dark reference and blocks any swap that leaves 2% of it. If the pool
+      // is still far from the feed (closed mid-auction), close at the pool's own price instead, or every swap would revert.
+      const snap = (await pub.readContract({ address: d.lens, abi: lensAbi, functionName: "snapshot", args: [d.hook, k] })) as unknown as { poolPrice: bigint };
+      const pool8 = snap.poolPrice / 10n ** 10n;
+      const far = answer > 0n && Number(pool8 > answer ? pool8 - answer : answer - pool8) / Number(answer) > 0.01;
+      const closeAt = body.price ? raw : far ? pool8 : raw;
       // a fresh price stamp first, so the pool goes dark because the market closed and not because the feed aged out
-      txs.push(await send(d.feed, feedAbi, "setAnswer", [raw]));
+      txs.push(await send(d.feed, feedAbi, "setAnswer", [closeAt]));
       txs.push(await send(d.marketStatus, marketAbi, "setOpen", [false]));
       txs.push(await send(d.hook, hookAbi, "poke", [k]));
     } else {

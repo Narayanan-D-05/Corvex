@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createWalletClient, custom, http, type Address, type Abi } from "viem";
 import { chain, EXPLORER, isLocal, publicClient, RPC_URL } from "./chain";
+import { explainRevert } from "./hookErrors";
 
 type Eth = { request: (a: { method: string; params?: unknown[] }) => Promise<unknown> };
 
@@ -80,7 +81,7 @@ export function useWallet() {
       try {
         gas = ((await publicClient.estimateContractGas(req as never)) * 13n) / 10n;
       } catch (e) {
-        throw new Error((e as { shortMessage?: string }).shortMessage ?? (e instanceof Error ? e.message.split("\n")[0] : "The transaction would fail"));
+        throw new Error(explainRevert(e) ?? (e as { shortMessage?: string }).shortMessage ?? (e instanceof Error ? e.message.split("\n")[0] : "The transaction would fail"));
       }
       const hash = await c.writeContract({ ...req, gas, chain } as never);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });

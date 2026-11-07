@@ -73,8 +73,13 @@ export function Orders({ c, w, onChange }: { c: State; w: Wallet; onChange: () =
   const ref = s.mode === 1 ? Number(s.darkRefPrice) / 1e18 : Number(s.poolPrice) / 1e18;
   const outOfBand = est !== null && Math.abs(est - ref) / ref > BAND;
 
+  // a dark pool whose price already sits outside the band around the dark reference rejects every swap
+  const poolNow = Number(s.poolPrice) / 1e18;
+  const stuck = s.mode === 1 && ref > 0 && Math.abs(poolNow - ref) / ref > BAND;
+
   let hint: string | null = null;
-  if (num > 0) {
+  if (stuck) hint = `Swaps are blocked: the pool ($${poolNow.toFixed(2)}) is more than 2% from the dark reference ($${ref.toFixed(2)}). Reopen the market at $${poolNow.toFixed(0)} to reset it.`;
+  else if (num > 0) {
     if (s.mode === 2) hint = "Trading is paused until the cross runs.";
     else if (s.mode === 1) hint = outOfBand ? `Queues until the open. This trade would move the price to about $${est!.toFixed(2)}, past the 2% band.` : `Fills now at about $${est?.toFixed(2)}, inside the 2% band.`;
     else hint = est ? `Fills now at about $${est.toFixed(2)}.` : null;
@@ -188,8 +193,8 @@ export function Orders({ c, w, onChange }: { c: State; w: Wallet; onChange: () =
           <span className="text-slate">{side === "buy" ? "Max price" : "Min price"} (optional)</span>
           <input inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="No limit" className="num mt-1 w-full rounded-lg border border-line bg-paper px-3 py-2" />
         </label>
-        {hint && <p data-testid="hint" className={`rounded-lg px-3 py-2 text-sm ${s.mode === 1 && outOfBand ? "bg-amber/15" : "bg-paper-2"}`}>{hint}</p>}
-        <button disabled={busy || !num || s.mode === 2} className="w-full rounded-lg bg-cobalt px-4 py-3 font-medium text-night disabled:opacity-40">
+        {hint && <p data-testid="hint" className={`rounded-lg px-3 py-2 text-sm ${stuck || (s.mode === 1 && outOfBand) ? "bg-amber/15" : "bg-paper-2"}`}>{hint}</p>}
+        <button disabled={busy || !num || s.mode === 2 || stuck} className="w-full rounded-lg bg-cobalt px-4 py-3 font-medium text-night disabled:opacity-40">
           {busy ? "Waiting for the chain" : s.mode === 1 && outOfBand ? "Queue order" : "Place order"}
         </button>
         {msg && <p role="status" className={`text-sm ${msg.ok ? "text-mint" : "text-rose"}`}>{msg.text}</p>}
