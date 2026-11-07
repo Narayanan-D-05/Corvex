@@ -280,7 +280,7 @@ Two things differ from the PRD sketch. v4's `initialize` takes no hook data, so 
 | [cre/session-attestor](cre/session-attestor) | The CRE workflow |
 | [cre/mock-api](cre/mock-api) | Mock market-data API for simulation |
 | [web](web) | Landing page, app console, replay, docs |
-| [docs](docs) | Architecture diagram and its generator, [DEMO.md](docs/DEMO.md) (pitch, diagrams, demo script) |
+| [docs](docs) | Architecture diagram and its generator, [DEMO.md](docs/DEMO.md) (pitch, diagrams, demo script), [talk.md](docs/talk.md) (what to say) |
 | [corvex.md](corvex.md) | The PRD |
 
 ## Credits
