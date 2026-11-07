@@ -8,6 +8,20 @@ Corvex is a Uniswap v4 hook for tokenized-stock pools. While a stock's reference
 
 The hook is a Uniswap v4 hook with a dynamic fee, an async queue, a uniform-price cross, `donate()` to LPs, and a decaying-fee gap auction (modelled on Uniswap's StablePair hook).
 
+## The problem
+
+Tokenized stocks trade on-chain all weekend, but the price they track does not: the exchange is closed from Friday evening to Monday morning, and on holidays, halts and split pauses. Liquidity providers sell into stale quotes. When news lands, the real price jumps at the open and the first bot to arrive buys the gap from the pool at Friday's price. LPs pay for it. A plain fee hook charges everyone a little more and still leaves the gap for the bot.
+
+## The solution
+
+Corvex gives a Uniswap v4 pool three behaviours:
+
+- **Reference price live:** normal trading at the normal fee.
+- **Reference price dark:** trades that keep the pool inside a 2% band still fill. Bigger trades are taken as claims and queued, so nothing fills at a stale price outside the band.
+- **Reference price returns:** swaps pause until anyone runs the cross. It clears the whole queue at **one price**, matches buys against sells, swaps only the net against the pool (never past that price), and donates the surplus to LPs. A falling-fee auction closes what is left of the gap.
+
+Each open and close is recorded as a Session Print, delivered to Arbitrum and Base over Chainlink CCIP, and checked by a Chainlink CRE workflow. The full pitch, architecture, sequence diagrams and the three-minute demo script are in [docs/DEMO.md](docs/DEMO.md).
+
 ## Proof it runs
 
 | What | Where |
@@ -92,6 +106,21 @@ sequenceDiagram
 
 Fillers pay p*. The pool leg usually costs less, and the difference is the surplus donated to LPs. If the pool cannot supply a full fill at p*, the short side is scaled down and the rest refunded. Fills and refunds are held as ERC-6909 claims and paid out with `withdraw`.
 
+### Where LPs get paid
+
+LPs earn in two ways. **Cross surplus** is donated with `donate()` and shows up on the console's Liquidity page. **Fees** (the normal 0.3%, and the falling auction fee after a cross) accrue to the pool itself.
+
+A surplus appears only when the net imbalance trades through the pool in the direction of the gap:
+
+| Reference against pool | The net must be | Result |
+| --- | --- | --- |
+| Above the pool | Buys | The pool sells up to p*, below p* on average. Surplus donated. |
+| Below the pool | Sells | The pool buys down to p*, above p* on average. Surplus donated. |
+| Above the pool | Sells, or buys equal to sells | The pool leg is skipped, because it would trade past p*. Buys and sells match peer to peer, the larger side is scaled down and the rest refunded. No surplus. |
+| No gap | Anything | No surplus. Fees only. |
+
+On the testnet, session 1 (one 5,000 USDG buy, reopened at $212 from $200) donated 1.2881 TSLA to LPs. Session 9 (net sell, reopened at $224 with the pool at $212) skipped the pool leg and left the gap to the auction. [docs/DEMO.md](docs/DEMO.md) has the test recipe for each case.
+
 ### Session Prints
 
 ```mermaid
@@ -169,9 +198,22 @@ bash scripts/reset-local.sh
 cd web && npm install && npm run build && npm start
 ```
 
-Open `http://localhost:3000/app`, pick a demo account, then use the demo controls: **Get test tokens**, **Close market**, place a large buy on the Orders tab, **Reopen market**, **Run cross**, **Attest prints**.
+Open `http://localhost:3000/app`, pick a demo account, then on the Trade page use the controls: **Get test tokens**, **Close market**, place a large buy and sell in **Place order**, **Reopen market** (it runs the cross when the market comes back), **Attest prints**, and withdraw your claims from the Queue tile.
 
 To run the same weekend as a script: `cd contracts && forge script script/LocalScenario.s.sol --rpc-url http://127.0.0.1:8545 --broadcast`.
+
+### The console
+
+`web` is a Next.js app. The landing page has a live product card, a three.js scene, an auto-playing replay and a hub diagram. `/app` is the console, laid out as one screen of tiles:
+
+- **Trade:** the pool state, the four prices (pool, reference, gap, cross), the market controls (close, reopen with a price, run the cross, get test tokens), the order form, the queue and the queue status (how much matches and how much goes to the pool).
+- **Prints:** each Session Print with its delivery and check progress on Arbitrum and Base.
+- **Liquidity:** what is in the pool, what crosses paid LPs, past crosses, the gap auction.
+- `/replay` plays a weekend through three pools; the LP profit and loss numbers follow the graph.
+
+For the testnet, copy the values from `web/.env.live.example` into `web/.env`. The Close and Reopen buttons call a localhost-only route (`/api/keeper`) that signs with the key in `contracts/.env` (or `KEEPER_PRIVATE_KEY`); the key never reaches the browser. If your system asks for reduced motion the page stays still and offers a button to turn the animations on.
+
+To test the whole flow on the live testnet (connect wallet, tokens, queue, reopen, withdraw, prints, attest), follow [docs/DEMO.md](docs/DEMO.md), section 8.
 
 ### CRE workflow
 
@@ -238,7 +280,7 @@ Two things differ from the PRD sketch. v4's `initialize` takes no hook data, so 
 | [cre/session-attestor](cre/session-attestor) | The CRE workflow |
 | [cre/mock-api](cre/mock-api) | Mock market-data API for simulation |
 | [web](web) | Landing page, app console, replay, docs |
-| [docs](docs) | Architecture diagram and its generator |
+| [docs](docs) | Architecture diagram and its generator, [DEMO.md](docs/DEMO.md) (pitch, diagrams, demo script) |
 | [corvex.md](corvex.md) | The PRD |
 
 ## Credits
